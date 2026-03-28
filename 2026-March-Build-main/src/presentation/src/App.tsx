@@ -12,13 +12,15 @@ import {
   Lock, 
   Cpu, 
   History as HistoryIcon,
-  Play
+  Play,
+  FileText
 } from 'lucide-react';
 import TwinModel from './components/TwinModel';
 import MetabolicChart from './components/MetabolicChart';
 import HistoryView from './components/HistoryView'; 
 import ScenarioView from './components/ScenarioView'; 
-import SettingsView from './components/SettingsView'; // Import SettingsView
+import SettingsView from './components/SettingsView';
+import PhysicianBriefView from './components/PhysicianBriefView';
 import './App.css';
 
 // --- Environment Configuration ---
@@ -27,8 +29,6 @@ const WS_URL = process.env.REACT_APP_WS_URL || 'http://localhost:50052';
 
 interface Recommendation { type: string; priority: string; action: string; logic: string; }
 interface AgentInsight { agent: string; insight: string; confidence: number; }
-interface PrivacyMetrics { he_protocol?: string; computation_proof?: string; data_encrypted?: boolean; noise_level?: string; }
-interface LearningMetrics { efficacy_score?: number; last_cycle?: string; }
 
 type AppView = 'dashboard' | 'history' | 'scenarios' | 'settings';
 
@@ -39,11 +39,10 @@ function App() {
   const [resilience, setResilience] = useState(94.2);
   const [surgicalRisk, setSurgicalRisk] = useState(0.85);
   const [simResults, setSimResults] = useState<AgentInsight[]>([]);
+  const [brief, setBrief] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([
     { type: 'Safety', priority: 'High', action: 'Monitor Cortisol', logic: 'Simulated spike detected in stress-loop.' }
   ]);
-  const [privacy, setPrivacy] = useState<PrivacyMetrics>({ data_encrypted: true, he_protocol: 'Microsoft SEAL v4.0' });
-  const [learning, setLearning] = useState<LearningMetrics>({ efficacy_score: 0.982, last_cycle: new Date().toISOString() });
   const [isLoading, setIsLoading] = useState(false);
   
   const [selectedInterventionType, setSelectedInterventionType] = useState('medication');
@@ -71,23 +70,15 @@ function App() {
     try {
       const payload: any = {
         patient_id: bioState.patient_id,
-        markers: { glucose: bioState.glucose, carbohydrate_intake: 50 },
+        intervention: { drug: selectedDrug, dose: dosage },
       };
-
-      if (selectedInterventionType === 'medication') {
-        payload.intervention = { drug: selectedDrug, dose: dosage };
-      } else if (selectedInterventionType === 'surgery') {
-        payload.intervention = { procedure: "Robotic Appendectomy (Simulated)" };
-      }
 
       const response = await axios.post(`${API_BASE_URL}/v1/simulation/rehearse`, payload);
       
       setSimResults(response.data.report);
+      setBrief(response.data.brief);
       setResilience(Number((response.data.resilience * 100).toFixed(1)));
-      setSurgicalRisk(Number((response.data.surgical_risk * 100).toFixed(2)));
       setRecommendations(response.data.recommendations);
-      setPrivacy(response.data.privacy_metrics);
-      setLearning(response.data.learning_metrics);
     } catch (err) { 
       console.error("Rehearsal Error:", err); 
     } finally { 
@@ -131,7 +122,6 @@ function App() {
 
         {currentView === 'dashboard' && (
           <section className="Dashboard-Grid">
-            {/* 3D Visualizer Card */}
             <div className="Card Visualizer-Card">
               <div className="Card-Header">
                 <div className="Title-Group">
@@ -151,7 +141,6 @@ function App() {
               </div>
             </div>
 
-            {/* Stats Column */}
             <div className="Stats-Column">
               <div className="Card Stat-Card highlight-blue">
                 <div className="Stat-Icon"><Activity size={24} /></div>
@@ -162,7 +151,6 @@ function App() {
                     <span className="Unit">mg/dL</span>
                   </div>
                 </div>
-                <div className="Trend-Indicator neutral">STABLE</div>
               </div>
 
               <div className="Card Stat-Card highlight-green">
@@ -173,22 +161,28 @@ function App() {
                     <span className="Value">{resilience}%</span>
                   </div>
                 </div>
-                <div className="Trend-Indicator plus">+2.4%</div>
               </div>
 
-              <div className="Card Stat-Card highlight-red">
-                <div className="Stat-Icon"><AlertTriangle size={24} /></div>
-                <div className="Stat-Info">
-                  <label>Surgical Risk</label>
-                  <div className="Value-Group">
-                    <span className="Value">{surgicalRisk}%</span>
+              <div className="Card Controls-Card">
+                <div className="Card-Header">
+                  <h3>Swarm Intervention</h3>
+                </div>
+                <div className="Control-Groups">
+                  <div className="Group">
+                    <label>Agent</label>
+                    <select value={selectedDrug} onChange={(e) => setSelectedDrug(e.target.value)}>
+                      <option value="Metformin">Metformin</option>
+                      <option value="Lisinopril">Lisinopril</option>
+                    </select>
+                  </div>
+                  <div className="Group">
+                    <label>Dosage (mg)</label>
+                    <input type="number" value={dosage} onChange={(e) => setDosage(Number(e.target.value))} />
                   </div>
                 </div>
-                <div className="Trend-Indicator neutral">NOMINAL</div>
               </div>
             </div>
 
-            {/* Real-time Chart Card */}
             <div className="Card Chart-Card">
               <div className="Card-Header">
                 <h3>Metabolic Trend (Real-time)</h3>
@@ -196,7 +190,6 @@ function App() {
               <MetabolicChart data={chartData} />
             </div>
 
-            {/* Recommendations Card */}
             <div className="Card Recommendations-Card">
               <div className="Card-Header">
                 <h3>Guardian Insights</h3>
@@ -212,41 +205,9 @@ function App() {
               </div>
             </div>
 
-            {/* Control Panel Card */}
-            <div className="Card Controls-Card">
-              <div className="Card-Header">
-                <h3>Intervention Parameters</h3>
-              </div>
-              <div className="Control-Groups">
-                <div className="Group">
-                  <label>Type</label>
-                  <select value={selectedInterventionType} onChange={(e) => setSelectedInterventionType(e.target.value)}>
-                    <option value="medication">Medication</option>
-                    <option value="surgery">Surgical Procedure</option>
-                  </select>
-                </div>
-                {selectedInterventionType === 'medication' && (
-                  <>
-                    <div className="Group">
-                      <label>Agent</label>
-                      <select value={selectedDrug} onChange={(e) => setSelectedDrug(e.target.value)}>
-                        <option value="Metformin">Metformin</option>
-                        <option value="Lisinopril">Lisinopril</option>
-                      </select>
-                    </div>
-                    <div className="Group">
-                      <label>Dosage (mg)</label>
-                      <input type="number" value={dosage} onChange={(e) => setDosage(Number(e.target.value))} />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Multi-Agent Console */}
             <div className="Card Console-Card">
               <div className="Card-Header">
-                <h3>Simulation Multi-Agent Report</h3>
+                <h3>Swarm Analysis Console</h3>
               </div>
               <div className="Console-Output">
                 {simResults.length > 0 ? simResults.map((result, i) => (
@@ -255,11 +216,16 @@ function App() {
                     <span className="Agent-Message">{result.insight}</span>
                   </div>
                 )) : (
-                  <div className="Empty-State">Biological Firewall Standby. Run Rehearsal to trigger Swarm analysis.</div>
+                  <div className="Empty-State">Biological Firewall Standby. Run Swarm Rehearsal.</div>
                 )}
               </div>
-
             </div>
+
+            {brief && (
+              <div style={{ gridColumn: 'span 3' }}>
+                <PhysicianBriefView brief={brief} />
+              </div>
+            )}
           </section>
         )}
 

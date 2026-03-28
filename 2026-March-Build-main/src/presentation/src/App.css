@@ -658,3 +658,188 @@ body {
   font-size: 0.85rem;
   color: var(--text-secondary);
 }
+
+/* Physician Brief Styles */
+.PhysicianBrief-Container {
+  margin-top: 1rem;
+  border: 1px solid var(--accent-color);
+  background: linear-gradient(145deg, #161b22 0%, #0d1117 100%);
+  padding: 2rem;
+}
+
+.Brief-Header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.Header-Left h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.version-tag {
+  font-size: 0.7rem;
+  background: var(--border-color);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+.Compliance-Badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.Compliance-Badge.passed {
+  background: rgba(63, 185, 80, 0.1);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.Brief-Meta-Grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.Meta-Item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.Brief-Section label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  letter-spacing: 1px;
+  margin-bottom: 0.75rem;
+}
+
+.clinical-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin-bottom: 2rem;
+}
+
+.Brief-Two-Col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.Signal-Card {
+  background: rgba(255,255,255,0.02);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid var(--border-color);
+}
+
+.Signal-Card.high { border-left-color: var(--danger); }
+.Signal-Card.medium { border-left-color: var(--warning); }
+
+.Signal-Main {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.Signal-Main .metric { font-weight: 600; font-size: 0.9rem; }
+.Signal-Main .delta { color: var(--danger); font-weight: 700; }
+
+.Signal-Context {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.Confidence-Bar {
+  height: 4px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  position: relative;
+  margin-top: 8px;
+}
+
+.Confidence-Bar .fill {
+  position: absolute;
+  height: 100%;
+  background: var(--accent-color);
+  border-radius: 2px;
+}
+
+.Confidence-Bar .label {
+  position: absolute;
+  top: -14px;
+  right: 0;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+
+.Alert-Group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.Alert-Item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  background: rgba(248, 81, 73, 0.05);
+  border-radius: 6px;
+  color: #ff7b72;
+}
+
+.Alert-Item.lab { color: #f1e05a; background: rgba(241, 224, 90, 0.05); }
+
+.bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.recommendations ul {
+  padding-left: 1.2rem;
+  margin: 0;
+}
+
+.recommendations li {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.Brief-Footer {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}

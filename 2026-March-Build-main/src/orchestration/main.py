@@ -3,6 +3,7 @@ import os
 import json
 import random
 import logging
+import hashlib
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 
@@ -20,172 +21,264 @@ from orchestration.models import (
 from orchestration.database import BioGuardianDB
 
 # --- Logging Setup ---
-logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(name)s] %(message)s')
-logger = logging.getLogger("Cerebellum")
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s')
+logger = logging.getLogger("BioGuardian.Orchestrator")
 
 db = BioGuardianDB()
 
-# --- Agent 1: The Scribe (OCR + RAG Simulation) ---
+# --- Utility Logic for Agents ---
+
+def simulate_loinc_normalization(raw_text: str) -> List[LabPanel]:
+    """
+    Simulates OCR + RAG logic for the Scribe Agent.
+    In production, this would use a vision model (e.g. Llama-3-Vision) 
+    and a vector store like LanceDB for LOINC mappings.
+    """
+    # Mock result for the hackathon demo
+    return [
+        LabPanel(
+            loinc_code="4544-3",
+            display_name="Hemoglobin A1c",
+            value=6.2,
+            unit="%",
+            reference_range="4.0-5.6",
+            date=datetime.now() - timedelta(days=14),
+            source_pdf_hash=hashlib.sha256(raw_text.encode()).hexdigest(),
+            flag="H"
+        ),
+        LabPanel(
+            loinc_code="2339-0",
+            display_name="Glucose [Mass/volume] in Blood",
+            value=115.0,
+            unit="mg/dL",
+            reference_range="70-99",
+            date=datetime.now() - timedelta(days=14),
+            source_pdf_hash=hashlib.sha256(raw_text.encode()).hexdigest(),
+            flag="H"
+        )
+    ]
+
+# --- Agent 1: The Scribe ---
 def scribe_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     pid = state['patient_id']
-    logger.info(f"[{pid}] Scribe: Normalizing lab data to LOINC standards...")
+    logger.info(f"[{pid}] Scribe: Executing PDF OCR and LOINC normalization.")
     
-    # Simulate PDF OCR -> LOINC JSON
-    mock_lab = LabPanel(
-        loinc_code="4544-3",
-        value=115.0,
-        unit="mg/dL",
-        reference_range="70-99",
-        date=datetime.now().isoformat(),
-        source_pdf_hash="sha256_8f2e1a..."
-    )
+    # 1. Simulate OCR processing
+    raw_lab_text = "Patient Report: HbA1c 6.2%, Glucose 115 mg/dL. Date: 2026-03-14"
     
-    state['lab_panels'] = [mock_lab]
+    # 2. Map to structured objects
+    labs = simulate_loinc_normalization(raw_lab_text)
+    
+    state['lab_panels'] = [lab.dict() for lab in labs]
     state['agent_logs'].append({
         "agent": "The Scribe",
-        "insight": "Normalized 1 Blood Panel (HbA1c/Glucose) to LOINC:4544-3",
-        "confidence": 0.99
+        "insight": f"Successfully parsed {len(labs)} lab results. HbA1c ({labs[0].value}%) is elevated.",
+        "confidence": 0.98
     })
     return state
 
-# --- Agent 2: The Pharmacist (openFDA + Contraindications) ---
+# --- Agent 2: The Pharmacist ---
 def pharmacist_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     pid = state['patient_id']
     protocol = state.get('protocol')
-    drug_name = protocol['substance'] if protocol else "Unknown"
+    if not protocol:
+        return state
     
-    logger.info(f"[{pid}] Pharmacist: Checking openFDA for {drug_name} contraindications...")
+    substance = protocol.get('substance', 'Unknown')
+    logger.info(f"[{pid}] Pharmacist: Screening {substance} against genomic risk and drug-drug interactions.")
     
-    # Simulate openFDA logic
-    warnings = []
-    if "lisinopril" in drug_name.lower():
-        warnings.append("Genomic sensitivity detected: ACE-inhibitor risk.")
+    # Simulate openFDA + local genomic database call
+    contraindications = []
     
+    # Scenario-based logic for demo
+    if "lisinopril" in substance.lower():
+        # Cross-reference with (mocked) genomic risk score from Scribe's data context
+        contraindications.append("Pharmacogenomic Alert: ACEI-Related Angioedema risk profile (High).")
+        contraindications.append("Correlation Alert: Elevated HbA1c may modulate renal clearance.")
+        
+    if "metformin" in substance.lower():
+        contraindications.append("Dose Optimization: Patient baseline glucose (115mg/dL) suggests protocol alignment.")
+
+    state['contraindications'] = contraindications
     state['agent_logs'].append({
         "agent": "The Pharmacist",
-        "insight": f"Screened {drug_name} via openFDA. Warnings: {len(warnings) or 'None'}",
-        "confidence": 0.95
+        "insight": f"Screened {substance}. Identified {len(contraindications)} relevant contraindications/alerts.",
+        "confidence": 0.96
     })
     return state
 
-# --- Agent 3: The Correlation Engine (Anomaly Detection) ---
-def correlation_agent(state: Dict[str, Any]) -> Dict[str, Any]:
+# --- Agent 3: The Correlation Engine ---
+def correlation_engine_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     pid = state['patient_id']
-    logger.info(f"[{pid}] Correlation Engine: Analyzing biometric time-series...")
+    logger.info(f"[{pid}] Correlation Engine: Analyzing biometric streams for statistical anomalies.")
     
-    # Simulate HealthKit Correlation (e.g. HRV drop after dose)
-    hrv_drop = AnomalySignal(
+    # Simulate time-series anomaly detection on HealthKit data
+    # Logic: Look for metric delta specifically in the window after protocol start
+    
+    signals = []
+    
+    # Example: HRV drop
+    hrv_signal = AnomalySignal(
         metric="HRV",
-        delta_pct=-22.0,
-        confidence=0.88,
-        correlated_event="6PM Dose",
-        window_hours=4
+        delta_pct=-22.5,
+        confidence=0.91,
+        correlated_event=f"Initial dose of {state.get('protocol', {}).get('substance', 'intervention')}",
+        window_hours=4,
+        severity="high"
     )
+    signals.append(hrv_signal)
     
-    state['signals'] = [hrv_drop]
+    # Example: Sleep volatility
+    sleep_signal = AnomalySignal(
+        metric="Deep Sleep Duration",
+        delta_pct=-15.0,
+        confidence=0.82,
+        correlated_event="Night-time dose",
+        window_hours=8,
+        severity="medium"
+    )
+    signals.append(sleep_signal)
+
+    state['signals'] = [s.dict() for s in signals]
     state['agent_logs'].append({
         "agent": "Correlation Engine",
-        "insight": f"Detected {hrv_drop.delta_pct}% drop in {hrv_drop.metric} correlated to {hrv_drop.correlated_event}.",
-        "confidence": 0.88
+        "insight": f"Significant {signals[0].metric} drop ({signals[0].delta_pct}%) detected with 91% confidence post-dose.",
+        "confidence": 0.91
     })
     return state
 
-# --- Agent 4: The Compliance Auditor (Deterministic Gate) ---
-def compliance_agent(state: Dict[str, Any]) -> Dict[str, Any]:
+# --- Agent 4: The Compliance Auditor ---
+def compliance_auditor_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     pid = state['patient_id']
-    logger.info(f"[{pid}] Compliance Auditor: Validating General Wellness Safe Harbor...")
+    logger.info(f"[{pid}] Compliance Auditor: Performing deterministic safety gate validation.")
     
-    # Deterministic rule-based gate
-    restricted_terms = ["diagnose", "cure", "treat", "prevent"]
-    logs = str(state['agent_logs'])
+    # Rule-based gate: ensure no diagnostic or curative claims
+    # This is a strict filter before clinical presentation
+    restricted_phrases = ["diagnose", "cure", "treat", "prescribe", "disease", "healed"]
     
-    passed = not any(term in logs.lower() for term in restricted_terms)
+    # Check logs for violations
+    violation = False
+    for log in state['agent_logs']:
+        if any(phrase in log['insight'].lower() for phrase in restricted_phrases):
+            violation = True
+            break
+            
+    # Assemble the final Physician Brief (SOAP-adjacent)
+    lab_alerts = [f"Abnormal {l['display_name']}: {l['value']} {l['unit']}" for l in state['lab_panels'] if l.get('flag')]
     
-    # Generate the Physician Brief (SOAP-adjacent)
     brief = PhysicianBrief(
-        signals=state['signals'],
-        recommendations=["Discuss HRV trend with physician", "Monitor glucose stability"],
-        compliance_gate_passed=passed,
-        clinical_summary=f"Patient {pid} exhibits correlated HRV volatility post-protocol event. Labs show elevated glucose (115mg/dL)."
+        patient_id=pid,
+        clinical_summary=f"BioGuardian detected a correlation between {state.get('protocol', {}).get('substance')} administration and biometric shifts. Baseline metrics show mild metabolic elevation.",
+        signals=[AnomalySignal(**s) for s in state['signals']],
+        lab_alerts=lab_alerts,
+        contraindications=state['contraindications'],
+        recommendations=[
+            "Review HRV/Sleep correlation with patient during next consult.",
+            "Assess genomic sensitivity to current ACEI protocol.",
+            "Verify glucose stability trends via real-time stream."
+        ],
+        compliance_gate_passed=not violation
     )
     
     state['brief'] = brief.dict()
-    state['compliance_status'] = passed
+    state['compliance_status'] = not violation
+    
     state['agent_logs'].append({
         "agent": "Compliance Auditor",
-        "insight": f"Output validated. Safe Harbor Status: {'PASSED' if passed else 'FAILED'}",
+        "insight": f"Audit complete. Compliance Gate: {'PASSED' if not violation else 'FAILED'}. Brief version {brief.version} generated.",
         "confidence": 1.0
     })
+    
     return state
 
-# --- Graph Orchestration ---
-workflow = StateGraph(dict) # Using dict for easier Flask integration
+# --- LangGraph Definition ---
 
-workflow.add_node("scribe", scribe_agent)
-workflow.add_node("pharmacist", pharmacist_agent)
-workflow.add_node("correlation", correlation_agent)
-workflow.add_node("compliance", compliance_agent)
+def build_firewall_graph():
+    workflow = StateGraph(dict) # State is passed as a dict for LangGraph simplicity
+    
+    workflow.add_node("scribe", scribe_agent)
+    workflow.add_node("pharmacist", pharmacist_agent)
+    workflow.add_node("correlation", correlation_engine_agent)
+    workflow.add_node("compliance", compliance_auditor_agent)
+    
+    workflow.set_entry_point("scribe")
+    workflow.add_edge("scribe", "pharmacist")
+    workflow.add_edge("pharmacist", "correlation")
+    workflow.add_edge("correlation", "compliance")
+    workflow.add_edge("compliance", END)
+    
+    return workflow.compile()
 
-workflow.set_entry_point("scribe")
-workflow.add_edge("scribe", "pharmacist")
-workflow.add_edge("pharmacist", "correlation")
-workflow.add_edge("correlation", "compliance")
-workflow.add_edge("compliance", END)
+app_firewall = build_firewall_graph()
 
-app_swarm = workflow.compile()
+# --- Server Layer ---
 
-# --- API Layer ---
 server = Flask(__name__)
 CORS(server)
 
 @server.route('/v1/simulation/rehearse', methods=['POST'])
-def run_firewall():
+def handle_rehearsal():
+    """
+    Main entry point for the 'Biological Dry Run'.
+    """
     try:
-        data = request.get_json()
-        pid = data.get('patient_id', 'PT-2026-ALPHA')
+        req_data = request.get_json()
+        pid = req_data.get('patient_id', 'PT-2026-ALPHA')
         
-        # Build initial state
+        # Build Protocol from request
+        intervention = req_data.get('intervention', {})
+        protocol = ProtocolEvent(
+            substance=intervention.get('drug', 'Lisinopril'),
+            dose=str(intervention.get('dose', '10mg')),
+            frequency="QD",
+            start_date=datetime.now(),
+            route="Oral"
+        )
+        
         initial_state = {
             "patient_id": pid,
             "lab_panels": [],
             "biometrics": [],
-            "protocol": data.get('intervention', {
-                "substance": "Lisinopril",
-                "dose": "10mg",
-                "frequency": "QD",
-                "start_date": "2026-03-28",
-                "route": "Oral"
-            }),
+            "protocol": protocol.dict(),
             "signals": [],
+            "contraindications": [],
             "agent_logs": [],
             "brief": None,
             "compliance_status": False
         }
         
-        final_state = app_swarm.invoke(initial_state)
+        logger.info(f"Triggering Swarm for patient {pid} - protocol: {protocol.substance}")
+        final_state = app_firewall.invoke(initial_state)
         
+        # Persist the brief in history
+        db.save_simulation(pid, f"Swarm Assessment: {protocol.substance}", final_state['agent_logs'])
+        
+        # Format response for the premium dashboard
         return jsonify({
             "status": "success",
             "report": final_state['agent_logs'],
             "brief": final_state['brief'],
-            "compliance": final_state['compliance_status'],
-            # Map back to dashboard frontend expectations
-            "resilience": 0.94 if final_state['compliance_status'] else 0.5,
-            "surgical_risk": 0.02,
+            "resilience": 0.92 if final_state['compliance_status'] else 0.4,
+            "surgical_risk": 0.04,
             "recommendations": [
-                {"type": "Safety", "priority": "High", "action": r, "logic": "Correlation detection"} 
+                {"type": "Safety", "priority": "High", "action": r, "logic": "Swarm synthesis"} 
                 for r in final_state['brief']['recommendations']
-            ]
+            ],
+            "compliance_passed": final_state['compliance_status']
         })
+        
     except Exception as e:
-        logger.error(f"Firewall execution failed: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logger.error(f"Internal Swarm Error: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": "The Swarm encountered an error."}), 500
 
 @server.route('/v1/simulation/sync', methods=['POST'])
-def sync():
-    # Keep ingestion layer compatibility
+def handle_sync():
     return jsonify({"status": "synced"}), 200
 
+@server.route('/v1/twin/history/<patient_id>', methods=['GET'])
+def handle_history(patient_id: str):
+    return jsonify(db.get_history(patient_id))
+
 if __name__ == "__main__":
-    logger.info("BioGuardian Swarm: Online.")
-    server.run(port=8000)
+    logger.info("BioGuardian Cerebellum (Autonomous Swarm) Starting...")
+    server.run(port=8000, debug=False)
