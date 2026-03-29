@@ -252,7 +252,7 @@ function parseUniversal(rows: string[][], headers: string[]): { readings: Biomet
       if (!rawType) continue;
       const mapped = matchType(rawType);
       if (!mapped) { unmatchedTypes.add(rawType.substring(0, 50)); continue; }
-      const value = parseFloat(row[valIdx]);
+      const value = parseFloat((row[valIdx] || '').replace(/,/g, ''));
       if (isNaN(value)) continue;
       readings.push({
         timestamp: (dateIdx >= 0 ? row[dateIdx] : '') || new Date().toISOString(),
@@ -284,7 +284,7 @@ function parseUniversal(rows: string[][], headers: string[]): { readings: Biomet
   for (const row of rows) {
     const ts = dateIdx >= 0 && row[dateIdx] ? row[dateIdx] : new Date().toISOString();
     for (let m = 0; m < mappedCols.length; m++) {
-      const raw = parseFloat(row[mappedCols[m]]);
+      const raw = parseFloat((row[mappedCols[m]] || '').replace(/,/g, ''));
       if (isNaN(raw)) continue;
       readings.push({
         timestamp: ts, type: mappedInfo[m][0],
