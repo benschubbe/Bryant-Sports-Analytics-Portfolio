@@ -1256,6 +1256,42 @@ body {
 .Empty-Dashboard p { color: var(--text-secondary); font-size: 14px; max-width: 500px; margin: 0 auto 8px; }
 .Empty-Hint { font-size: 12px !important; opacity: 0.6; }
 
+/* Section titles */
+.Section-Title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 16px; color: var(--text-primary); margin: 8px 0 4px 0;
+  padding-bottom: 4px; border-bottom: 1px solid var(--border-color);
+}
+
+/* Metric status border */
+.Metric-Card.status-good { border-left: 3px solid var(--success); }
+.Metric-Card.status-warning { border-left: 3px solid var(--warning); }
+.Metric-Card.status-bad { border-left: 3px solid var(--danger); }
+
+/* Motivation card */
+.Motivation-Card {
+  display: flex; align-items: center; gap: 24px; padding: 20px 24px;
+}
+.Motivation-Score {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;
+  min-width: 80px;
+}
+.Score-Value { font-size: 32px; font-weight: 700; }
+.Score-Label { font-size: 11px; color: var(--text-secondary); }
+.Motivation-Body { display: flex; gap: 14px; align-items: flex-start; }
+.Motivation-Emoji { font-size: 28px; flex-shrink: 0; }
+.Motivation-Body h3 { margin: 0 0 4px; font-size: 16px; }
+.Motivation-Body p { margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+.tone-great { border-left: 3px solid var(--success); }
+.tone-great .Score-Value { color: var(--success); }
+.tone-good { border-left: 3px solid var(--accent-color); }
+.tone-good .Score-Value { color: var(--accent-color); }
+.tone-nudge { border-left: 3px solid var(--warning); }
+.tone-nudge .Score-Value { color: var(--warning); }
+.tone-urgent { border-left: 3px solid var(--danger); }
+.tone-urgent .Score-Value { color: var(--danger); }
+
 /* --- CSV Upload --- */
 .CsvUpload-Card { grid-column: span 2; }
 .CsvUpload-Card .Card-Header { display: flex; justify-content: space-between; align-items: center; }

@@ -1,239 +1,247 @@
 import React, { useState } from 'react';
 import {
-  ShieldCheck,
-  Moon,
-  Footprints,
-  Heart,
-  AlertTriangle,
-  TrendingDown,
-  TrendingUp,
-  Pill,
-  Stethoscope,
-  ArrowRight,
-  BarChart3,
-  Settings as SettingsIcon,
-  Lock
+  ShieldCheck, Moon, Footprints, Heart, AlertTriangle, TrendingDown,
+  TrendingUp, ArrowRight, Pill, Stethoscope, BarChart3, Lock, Flame,
+  Zap, Battery, Wind, Target, Award, ThumbsUp
 } from 'lucide-react';
 import CsvUpload, { BiometricReading } from './components/CsvUpload';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import './App.css';
 
 // ---------------------------------------------------------------------------
-// Analysis helpers — all client-side, zero data transmitted
+// Metric definitions — what we track, normal ranges, display config
 // ---------------------------------------------------------------------------
 
-interface MetricSummary {
-  label: string;
-  avg: number;
-  min: number;
-  max: number;
-  unit: string;
-  trend: 'up' | 'down' | 'stable';
-  trendPct: number;
-  readings: number;
-  anomalies: number;
+interface MetricDef {
+  type: string; label: string; unit: string; icon: string;
+  normLow: number; normHigh: number; color: string;
+  category: 'sleep' | 'activity' | 'heart' | 'recovery';
+}
+
+const METRICS: MetricDef[] = [
+  { type: 'SLEEP_DURATION', label: 'Sleep Duration', unit: 'min', icon: 'moon', normLow: 420, normHigh: 540, color: '#a78bfa', category: 'sleep' },
+  { type: 'DEEP_SLEEP', label: 'Deep Sleep', unit: 'min', icon: 'moon', normLow: 60, normHigh: 120, color: '#7c3aed', category: 'sleep' },
+  { type: 'REM_SLEEP', label: 'REM Sleep', unit: 'min', icon: 'moon', normLow: 60, normHigh: 120, color: '#8b5cf6', category: 'sleep' },
+  { type: 'LIGHT_SLEEP', label: 'Light Sleep', unit: 'min', icon: 'moon', normLow: 180, normHigh: 300, color: '#c4b5fd', category: 'sleep' },
+  { type: 'SLEEP_SCORE', label: 'Sleep Score', unit: 'pts', icon: 'moon', normLow: 60, normHigh: 100, color: '#ddd6fe', category: 'sleep' },
+  { type: 'STEP_COUNT', label: 'Daily Steps', unit: 'steps', icon: 'steps', normLow: 7000, normHigh: 12000, color: '#34d399', category: 'activity' },
+  { type: 'DISTANCE', label: 'Distance', unit: 'km', icon: 'steps', normLow: 4, normHigh: 10, color: '#6ee7b7', category: 'activity' },
+  { type: 'CALORIES_BURNED', label: 'Calories Burned', unit: 'kcal', icon: 'flame', normLow: 1800, normHigh: 3000, color: '#fb923c', category: 'activity' },
+  { type: 'ACTIVE_CALORIES', label: 'Active Calories', unit: 'kcal', icon: 'flame', normLow: 300, normHigh: 800, color: '#fdba74', category: 'activity' },
+  { type: 'FLOORS_CLIMBED', label: 'Floors Climbed', unit: 'floors', icon: 'steps', normLow: 5, normHigh: 20, color: '#a7f3d0', category: 'activity' },
+  { type: 'INTENSITY_MINUTES', label: 'Intensity Minutes', unit: 'min', icon: 'zap', normLow: 20, normHigh: 60, color: '#fbbf24', category: 'activity' },
+  { type: 'HRV_RMSSD', label: 'HRV (RMSSD)', unit: 'ms', icon: 'heart', normLow: 20, normHigh: 60, color: '#f472b6', category: 'heart' },
+  { type: 'RESTING_HEART_RATE', label: 'Resting HR', unit: 'bpm', icon: 'heart', normLow: 50, normHigh: 80, color: '#fb7185', category: 'heart' },
+  { type: 'AVG_HEART_RATE', label: 'Avg Heart Rate', unit: 'bpm', icon: 'heart', normLow: 60, normHigh: 100, color: '#fda4af', category: 'heart' },
+  { type: 'MAX_HEART_RATE', label: 'Max Heart Rate', unit: 'bpm', icon: 'heart', normLow: 120, normHigh: 190, color: '#e11d48', category: 'heart' },
+  { type: 'BODY_BATTERY', label: 'Body Battery', unit: 'pts', icon: 'battery', normLow: 30, normHigh: 100, color: '#22d3ee', category: 'recovery' },
+  { type: 'STRESS_LEVEL', label: 'Stress Level', unit: 'pts', icon: 'wind', normLow: 0, normHigh: 50, color: '#f97316', category: 'recovery' },
+  { type: 'AVG_STRESS', label: 'Avg Stress', unit: 'pts', icon: 'wind', normLow: 0, normHigh: 40, color: '#ea580c', category: 'recovery' },
+  { type: 'RESPIRATION_RATE', label: 'Respiration Rate', unit: 'brpm', icon: 'wind', normLow: 12, normHigh: 20, color: '#67e8f9', category: 'recovery' },
+  { type: 'SPO2', label: 'SpO2', unit: '%', icon: 'wind', normLow: 95, normHigh: 100, color: '#06b6d4', category: 'recovery' },
+];
+
+const ICON_MAP: Record<string, React.ReactNode> = {
+  moon: <Moon size={20} />, steps: <Footprints size={20} />, heart: <Heart size={20} />,
+  flame: <Flame size={20} />, zap: <Zap size={20} />, battery: <Battery size={20} />,
+  wind: <Wind size={20} />,
+};
+
+// ---------------------------------------------------------------------------
+// Analysis
+// ---------------------------------------------------------------------------
+
+interface Summary {
+  def: MetricDef; avg: number; min: number; max: number; count: number;
+  trend: 'up' | 'down' | 'stable'; trendPct: number; anomalyCount: number;
   data: { date: string; value: number }[];
+  status: 'good' | 'warning' | 'bad';
 }
 
 interface Anomaly {
-  type: string;
-  date: string;
-  value: number;
-  expected: string;
-  severity: 'low' | 'medium' | 'high';
-  message: string;
+  metric: string; date: string; value: number; expected: string;
+  severity: 'low' | 'medium' | 'high'; message: string;
 }
 
-interface Recommendation {
-  category: 'supplement' | 'lifestyle' | 'doctor';
-  title: string;
-  detail: string;
-  priority: 'low' | 'medium' | 'high';
-  source: string;
+interface Rec {
+  cat: 'supplement' | 'lifestyle' | 'doctor';
+  title: string; detail: string; priority: 'low' | 'medium' | 'high'; source: string;
 }
 
-const SLEEP_NORMAL = { low: 420, high: 540, unit: 'min' };  // 7-9 hours
-const HRV_NORMAL = { low: 20, high: 60, unit: 'ms' };
-const HR_NORMAL = { low: 50, high: 85, unit: 'bpm' };
-const STEPS_NORMAL = { low: 6000, high: 12000, unit: 'steps' };
-
-function summarize(readings: BiometricReading[], type: string, label: string, unit: string, normLow: number, normHigh: number): MetricSummary | null {
-  const filtered = readings.filter(r => r.type === type).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  if (filtered.length === 0) return null;
-
-  const values = filtered.map(r => r.value);
-  const avg = values.reduce((s, v) => s + v, 0) / values.length;
-  const firstHalf = values.slice(0, Math.floor(values.length / 2));
-  const secondHalf = values.slice(Math.floor(values.length / 2));
-  const firstAvg = firstHalf.length ? firstHalf.reduce((s, v) => s + v, 0) / firstHalf.length : avg;
-  const secondAvg = secondHalf.length ? secondHalf.reduce((s, v) => s + v, 0) / secondHalf.length : avg;
-  const trendPct = firstAvg !== 0 ? ((secondAvg - firstAvg) / firstAvg) * 100 : 0;
-
-  let anomalies = 0;
-  for (const v of values) {
-    if (v < normLow * 0.85 || v > normHigh * 1.15) anomalies++;
-  }
-
-  return {
-    label, unit, avg: Math.round(avg * 10) / 10,
-    min: Math.round(Math.min(...values) * 10) / 10,
-    max: Math.round(Math.max(...values) * 10) / 10,
-    trend: trendPct > 3 ? 'up' : trendPct < -3 ? 'down' : 'stable',
-    trendPct: Math.round(trendPct * 10) / 10,
-    readings: filtered.length,
-    anomalies,
-    data: filtered.map(r => ({ date: new Date(r.timestamp).toLocaleDateString(), value: Math.round(r.value * 10) / 10 })),
-  };
-}
-
-function detectAnomalies(readings: BiometricReading[]): Anomaly[] {
-  const anomalies: Anomaly[] = [];
+function analyze(readings: BiometricReading[]): { summaries: Summary[]; anomalies: Anomaly[]; recs: Rec[]; score: number } {
   const byType: Record<string, BiometricReading[]> = {};
-  for (const r of readings) {
-    (byType[r.type] = byType[r.type] || []).push(r);
-  }
+  for (const r of readings) (byType[r.type] = byType[r.type] || []).push(r);
 
-  const checks: { type: string; label: string; low: number; high: number; unit: string }[] = [
-    { type: 'SLEEP_ANALYSIS', label: 'Sleep Duration', low: 420, high: 540, unit: 'min' },
-    { type: 'HRV_RMSSD', label: 'HRV (RMSSD)', low: 20, high: 60, unit: 'ms' },
-    { type: 'RESTING_HEART_RATE', label: 'Resting HR', low: 50, high: 85, unit: 'bpm' },
-    { type: 'STEP_COUNT', label: 'Daily Steps', low: 6000, high: 12000, unit: 'steps' },
-  ];
+  const summaries: Summary[] = [];
+  const anomalies: Anomaly[] = [];
 
-  for (const check of checks) {
-    const data = byType[check.type] || [];
-    for (const r of data) {
-      if (r.value < check.low * 0.85) {
-        anomalies.push({
-          type: check.label, date: new Date(r.timestamp).toLocaleDateString(),
-          value: r.value, expected: `${check.low}-${check.high} ${check.unit}`,
-          severity: r.value < check.low * 0.7 ? 'high' : 'medium',
-          message: `${check.label} critically low at ${Math.round(r.value)} ${check.unit}`,
-        });
-      } else if (r.value > check.high * 1.15) {
-        anomalies.push({
-          type: check.label, date: new Date(r.timestamp).toLocaleDateString(),
-          value: r.value, expected: `${check.low}-${check.high} ${check.unit}`,
-          severity: r.value > check.high * 1.3 ? 'high' : 'medium',
-          message: `${check.label} elevated at ${Math.round(r.value)} ${check.unit}`,
-        });
-      }
-    }
-    // Trend anomaly: 3+ consecutive declining values
-    if (data.length >= 5) {
-      const sorted = [...data].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      let declineStreak = 0;
-      for (let i = 1; i < sorted.length; i++) {
-        if (sorted[i].value < sorted[i - 1].value * 0.95) declineStreak++;
-        else declineStreak = 0;
-        if (declineStreak >= 3) {
+  for (const def of METRICS) {
+    const arr = (byType[def.type] || []).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    if (arr.length === 0) continue;
+
+    const vals = arr.map(r => r.value);
+    const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+    const half = Math.floor(vals.length / 2);
+    const firstAvg = vals.slice(0, half || 1).reduce((s, v) => s + v, 0) / (half || 1);
+    const secondAvg = vals.slice(half).reduce((s, v) => s + v, 0) / (vals.length - half);
+    const trendPct = firstAvg ? ((secondAvg - firstAvg) / firstAvg) * 100 : 0;
+
+    let anomalyCount = 0;
+    for (const v of vals) {
+      const lo = def.normLow * 0.85, hi = def.normHigh * 1.15;
+      if (v < lo || v > hi) {
+        anomalyCount++;
+        if (anomalies.length < 15) {
+          const idx = vals.indexOf(v);
           anomalies.push({
-            type: check.label, date: new Date(sorted[i].timestamp).toLocaleDateString(),
-            value: sorted[i].value, expected: 'Stable or improving trend',
-            severity: 'medium',
-            message: `${check.label} declining for ${declineStreak + 1} consecutive readings`,
+            metric: def.label, date: new Date(arr[idx]?.timestamp || '').toLocaleDateString(),
+            value: Math.round(v * 10) / 10, expected: `${def.normLow}-${def.normHigh} ${def.unit}`,
+            severity: (v < def.normLow * 0.7 || v > def.normHigh * 1.3) ? 'high' : 'medium',
+            message: `${def.label} at ${Math.round(v)} ${def.unit} (${v < def.normLow ? 'below' : 'above'} range)`,
           });
-          break;
         }
       }
     }
+
+    const status = avg < def.normLow * 0.9 || avg > def.normHigh * 1.1 ? 'bad' : avg < def.normLow || avg > def.normHigh ? 'warning' : 'good';
+
+    summaries.push({
+      def, avg: Math.round(avg * 10) / 10, min: Math.round(Math.min(...vals) * 10) / 10,
+      max: Math.round(Math.max(...vals) * 10) / 10, count: arr.length,
+      trend: trendPct > 3 ? 'up' : trendPct < -3 ? 'down' : 'stable',
+      trendPct: Math.round(trendPct * 10) / 10, anomalyCount, status,
+      data: arr.map(r => ({ date: new Date(r.timestamp).toLocaleDateString(), value: Math.round(r.value * 10) / 10 })),
+    });
   }
-  return anomalies.slice(0, 10); // cap at 10
+
+  const recs = buildRecs(summaries, anomalies);
+  const goodCount = summaries.filter(s => s.status === 'good').length;
+  const score = summaries.length ? Math.round((goodCount / summaries.length) * 100) : 0;
+
+  return { summaries, anomalies, recs, score };
 }
 
-function generateRecommendations(summaries: (MetricSummary | null)[], anomalies: Anomaly[]): Recommendation[] {
-  const recs: Recommendation[] = [];
-  const sleep = summaries.find(s => s && s.label === 'Sleep Duration');
-  const hrv = summaries.find(s => s && s.label === 'HRV (RMSSD)');
-  const steps = summaries.find(s => s && s.label === 'Daily Steps');
-  const hr = summaries.find(s => s && s.label === 'Resting Heart Rate');
+function buildRecs(summaries: Summary[], anomalies: Anomaly[]): Rec[] {
+  const recs: Rec[] = [];
+  const get = (type: string) => summaries.find(s => s.def.type === type);
+
+  const sleep = get('SLEEP_DURATION');
+  const deep = get('DEEP_SLEEP');
+  const hrv = get('HRV_RMSSD');
+  const steps = get('STEP_COUNT');
+  const hr = get('RESTING_HEART_RATE');
+  const stress = get('AVG_STRESS') || get('STRESS_LEVEL');
+  const intensity = get('INTENSITY_MINUTES');
+  const battery = get('BODY_BATTERY');
+  const spo2 = get('SPO2');
 
   if (sleep && sleep.avg < 420) {
-    recs.push({ category: 'supplement', title: 'Magnesium Glycinate (200-400mg)', detail: 'Low sleep duration detected. Magnesium glycinate taken 1h before bed supports GABA activity and may improve sleep onset latency and total duration.', priority: 'high', source: 'Abbasi et al., J Res Med Sci, 2012' });
-    recs.push({ category: 'lifestyle', title: 'Sleep Hygiene Protocol', detail: `Average sleep is ${Math.round(sleep.avg)} min (${(sleep.avg/60).toFixed(1)}h). Target 7-9 hours. Limit screen exposure 1h before bed, keep bedroom at 65-68°F, maintain consistent sleep/wake times.`, priority: 'high', source: 'CDC Sleep Guidelines' });
-  } else if (sleep && sleep.avg < 480) {
-    recs.push({ category: 'lifestyle', title: 'Extend Sleep Window', detail: `Average sleep is ${Math.round(sleep.avg)} min (${(sleep.avg/60).toFixed(1)}h). Aim for 480+ min. Consider moving bedtime 30 min earlier.`, priority: 'medium', source: 'Walker, Why We Sleep, 2017' });
+    recs.push({ cat: 'supplement', title: 'Magnesium Glycinate 200-400mg', detail: `Sleep averaging ${(sleep.avg/60).toFixed(1)}h (${Math.round(sleep.avg)} min). Magnesium before bed supports GABA activity and improves sleep onset.`, priority: 'high', source: 'Abbasi et al., J Res Med Sci, 2012' });
+    recs.push({ cat: 'lifestyle', title: 'Sleep Hygiene Protocol', detail: 'Target 7-9h. No screens 1h before bed, bedroom 65-68°F, consistent schedule even weekends.', priority: 'high', source: 'CDC Sleep Guidelines' });
   }
-
+  if (deep && deep.avg < 60) {
+    recs.push({ cat: 'lifestyle', title: 'Increase Deep Sleep', detail: `Deep sleep averaging ${Math.round(deep.avg)} min (target: 60-120). Exercise earlier in the day, avoid alcohol within 3h of bed, keep room cool.`, priority: 'medium', source: 'Walker, Why We Sleep, 2017' });
+  }
   if (hrv && hrv.avg < 25) {
-    recs.push({ category: 'supplement', title: 'Omega-3 (EPA/DHA 1000-2000mg)', detail: 'Low HRV indicates reduced autonomic flexibility. Omega-3 supplementation has demonstrated HRV improvement in multiple RCTs.', priority: 'high', source: 'Xin et al., Eur J Clin Nutr, 2013' });
-    recs.push({ category: 'doctor', title: 'Discuss HRV with Physician', detail: `Average HRV is ${hrv.avg}ms (normal: 20-60ms). Persistently low HRV may warrant cardiac or autonomic evaluation.`, priority: 'high', source: 'Clinical threshold' });
+    recs.push({ cat: 'supplement', title: 'Omega-3 EPA/DHA 1000-2000mg', detail: `HRV averaging ${hrv.avg}ms — low autonomic flexibility. Omega-3 improves HRV in RCTs.`, priority: 'high', source: 'Xin et al., Eur J Clin Nutr, 2013' });
+    recs.push({ cat: 'doctor', title: 'Discuss Low HRV', detail: `HRV ${hrv.avg}ms is below typical range (20-60ms). Persistently low HRV may warrant cardiac evaluation.`, priority: 'high', source: 'Shaffer & Ginsberg, Front Public Health, 2017' });
   } else if (hrv && hrv.trend === 'down' && Math.abs(hrv.trendPct) > 10) {
-    recs.push({ category: 'doctor', title: 'HRV Declining Trend', detail: `HRV decreased ${Math.abs(hrv.trendPct).toFixed(1)}% over the observation period. Discuss with physician — declining HRV can indicate stress, medication effects, or autonomic changes.`, priority: 'medium', source: 'Shaffer & Ginsberg, Front Public Health, 2017' });
+    recs.push({ cat: 'doctor', title: 'HRV Declining', detail: `HRV dropped ${Math.abs(hrv.trendPct).toFixed(1)}% — could indicate medication effects, overtraining, or stress.`, priority: 'medium', source: 'Clinical guideline' });
   }
-  if (hrv && hrv.avg >= 25) {
-    recs.push({ category: 'lifestyle', title: 'Maintain HRV with Recovery', detail: `HRV averaging ${hrv.avg}ms is within range. Prioritize recovery days after intense training. Avoid alcohol within 3h of sleep.`, priority: 'low', source: 'General wellness guidance' });
-  }
-
   if (steps && steps.avg < 6000) {
-    recs.push({ category: 'lifestyle', title: 'Increase Daily Movement', detail: `Average ${Math.round(steps.avg)} steps/day. Target 7,000-10,000. Add a 20-min walk after meals to improve insulin sensitivity and cardiovascular health.`, priority: 'medium', source: 'Tudor-Locke et al., Int J Behav Nutr Phys Act, 2011' });
-    recs.push({ category: 'supplement', title: 'Vitamin D3 (1000-2000 IU)', detail: 'Low activity often correlates with reduced sun exposure. Vitamin D supports bone health, immune function, and mood regulation.', priority: 'low', source: 'Holick, NEJM, 2007' });
+    recs.push({ cat: 'lifestyle', title: 'Increase Daily Steps', detail: `Averaging ${Math.round(steps.avg)} steps. Add a 20-min walk after meals — even 7,000 steps/day reduces all-cause mortality 50-70%.`, priority: 'medium', source: 'Paluch et al., Lancet, 2022' });
+    recs.push({ cat: 'supplement', title: 'Vitamin D3 1000-2000 IU', detail: 'Low activity correlates with low sun exposure. Vitamin D supports immunity, bone health, and mood.', priority: 'low', source: 'Holick, NEJM, 2007' });
   }
-
   if (hr && hr.avg > 80) {
-    recs.push({ category: 'lifestyle', title: 'Cardio Conditioning', detail: `Resting HR averaging ${Math.round(hr.avg)} bpm. Aerobic exercise 3-5x/week (zone 2, conversational pace) can lower resting HR by 5-15 bpm over 8-12 weeks.`, priority: 'medium', source: 'AHA Exercise Guidelines' });
+    recs.push({ cat: 'lifestyle', title: 'Aerobic Conditioning', detail: `Resting HR ${Math.round(hr.avg)} bpm. Zone 2 cardio 3-5x/week can lower resting HR by 5-15 bpm over 8-12 weeks.`, priority: 'medium', source: 'AHA Exercise Guidelines' });
   }
-
+  if (stress && stress.avg > 45) {
+    recs.push({ cat: 'supplement', title: 'Ashwagandha 300-600mg', detail: `Average stress score ${Math.round(stress.avg)} — elevated. Ashwagandha (KSM-66) reduces cortisol by 30% in RCTs.`, priority: 'medium', source: 'Chandrasekhar et al., Indian J Psychol Med, 2012' });
+    recs.push({ cat: 'lifestyle', title: 'Stress Reduction', detail: '10-min daily breathwork (box breathing 4-4-4-4) or guided meditation. Even 5 min reduces acute stress markers.', priority: 'medium', source: 'Huberman Lab, Stanford' });
+  }
+  if (intensity && intensity.avg < 15) {
+    recs.push({ cat: 'lifestyle', title: 'More Vigorous Activity', detail: `Only ${Math.round(intensity.avg)} intensity min/day. WHO recommends 150 min moderate or 75 min vigorous per week. Try interval walks or bodyweight circuits.`, priority: 'medium', source: 'WHO Physical Activity Guidelines, 2020' });
+  }
+  if (battery && battery.avg < 30) {
+    recs.push({ cat: 'lifestyle', title: 'Prioritize Recovery', detail: `Body Battery averaging ${Math.round(battery.avg)} — very low. Take a rest day, get to bed 30 min earlier, reduce high-intensity training.`, priority: 'high', source: 'Garmin Body Battery guidance' });
+  }
+  if (spo2 && spo2.avg < 95) {
+    recs.push({ cat: 'doctor', title: 'Low Blood Oxygen', detail: `SpO2 averaging ${spo2.avg}%. Values below 95% warrant medical evaluation — could indicate respiratory or cardiac issues.`, priority: 'high', source: 'Clinical threshold' });
+  }
   if (anomalies.filter(a => a.severity === 'high').length >= 3) {
-    recs.push({ category: 'doctor', title: 'Multiple High-Severity Anomalies', detail: `${anomalies.filter(a => a.severity === 'high').length} high-severity anomalies detected. Schedule a wellness check to discuss these findings with your physician.`, priority: 'high', source: 'BioGuardian anomaly threshold' });
+    recs.push({ cat: 'doctor', title: 'Multiple Anomalies', detail: `${anomalies.filter(a => a.severity === 'high').length} high-severity anomalies detected. Schedule a wellness check.`, priority: 'high', source: 'BioGuardian threshold' });
   }
-
   if (recs.length === 0) {
-    recs.push({ category: 'lifestyle', title: 'All Metrics Within Range', detail: 'Your sleep and activity data looks healthy. Keep up your current routine and check back after your next data export.', priority: 'low', source: 'General wellness' });
+    recs.push({ cat: 'lifestyle', title: 'Looking Good', detail: 'All metrics within healthy ranges. Keep it up and check back next week.', priority: 'low', source: 'General wellness' });
   }
-
   return recs;
 }
 
 // ---------------------------------------------------------------------------
-// Components
+// Motivation component
 // ---------------------------------------------------------------------------
 
-const MetricCard: React.FC<{ summary: MetricSummary; icon: React.ReactNode; color: string }> = ({ summary, icon, color }) => (
-  <div className="Card Metric-Card">
+function getMotivation(score: number, summaries: Summary[]): { emoji: string; headline: string; body: string; tone: 'great' | 'good' | 'nudge' | 'urgent' } {
+  const badMetrics = summaries.filter(s => s.status === 'bad');
+  const decliners = summaries.filter(s => s.trend === 'down' && Math.abs(s.trendPct) > 5);
+
+  if (score >= 80 && badMetrics.length === 0) return {
+    emoji: '🔥', headline: 'You\'re crushing it.',
+    body: `${score}% of your metrics are in healthy range. Your consistency is building compounding health returns — the kind that adds years, not just days. Keep showing up.`,
+    tone: 'great'
+  };
+  if (score >= 60) return {
+    emoji: '💪', headline: 'Solid foundation. Room to push.',
+    body: `${score}% in range. ${badMetrics.length > 0 ? badMetrics.map(s => s.def.label).join(' and ') + ' need attention. ' : ''}Small changes compound — one more walk, 30 min more sleep. Future you will thank present you.`,
+    tone: 'good'
+  };
+  if (score >= 40) return {
+    emoji: '⚡', headline: 'Time to take control.',
+    body: `${badMetrics.length} metrics need work${decliners.length > 0 ? ` and ${decliners.length} are trending down` : ''}. You don't need to fix everything today — pick ONE thing from the recommendations below and start there. Progress beats perfection.`,
+    tone: 'nudge'
+  };
+  return {
+    emoji: '🚨', headline: 'Your body is asking for help.',
+    body: `${badMetrics.length} metrics are outside healthy range. This isn't about guilt — it's data showing you where to focus. Start with sleep: it's the foundation everything else is built on. Even 30 extra minutes tonight changes tomorrow's numbers.`,
+    tone: 'urgent'
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+const MetricCard: React.FC<{ s: Summary }> = ({ s }) => (
+  <div className={`Card Metric-Card status-${s.status}`}>
     <div className="Metric-Header">
-      <div className="Metric-Icon" style={{ color }}>{icon}</div>
-      <div>
-        <h4>{summary.label}</h4>
-        <span className="Metric-Count">{summary.readings} readings</span>
-      </div>
+      <div className="Metric-Icon" style={{ color: s.def.color }}>{ICON_MAP[s.def.icon]}</div>
+      <div><h4>{s.def.label}</h4><span className="Metric-Count">{s.count} readings</span></div>
     </div>
-    <div className="Metric-Value" style={{ color }}>
-      {summary.avg} <span className="Metric-Unit">{summary.unit}</span>
+    <div className="Metric-Value" style={{ color: s.def.color }}>{s.avg} <span className="Metric-Unit">{s.def.unit}</span></div>
+    <div className="Metric-Range"><span>Low: {s.min}</span><span>High: {s.max}</span></div>
+    <div className={`Metric-Trend trend-${s.trend}`}>
+      {s.trend === 'up' ? <TrendingUp size={14} /> : s.trend === 'down' ? <TrendingDown size={14} /> : <ArrowRight size={14} />}
+      <span>{s.trend === 'stable' ? 'Stable' : `${s.trendPct > 0 ? '+' : ''}${s.trendPct}%`}</span>
     </div>
-    <div className="Metric-Range">
-      <span>Min: {summary.min}</span>
-      <span>Max: {summary.max}</span>
-    </div>
-    <div className={`Metric-Trend trend-${summary.trend}`}>
-      {summary.trend === 'up' ? <TrendingUp size={14} /> : summary.trend === 'down' ? <TrendingDown size={14} /> : <ArrowRight size={14} />}
-      <span>{summary.trend === 'stable' ? 'Stable' : `${summary.trendPct > 0 ? '+' : ''}${summary.trendPct}%`}</span>
-    </div>
-    {summary.anomalies > 0 && (
-      <div className="Metric-Anomaly-Badge">
-        <AlertTriangle size={12} /> {summary.anomalies} anomal{summary.anomalies === 1 ? 'y' : 'ies'}
-      </div>
-    )}
+    {s.anomalyCount > 0 && <div className="Metric-Anomaly-Badge"><AlertTriangle size={12} /> {s.anomalyCount}</div>}
   </div>
 );
 
-const MiniChart: React.FC<{ data: { date: string; value: number }[]; color: string; label: string }> = ({ data, color, label }) => (
+const MiniChart: React.FC<{ s: Summary }> = ({ s }) => (
   <div className="Card Chart-Card-Mini">
-    <h4>{label}</h4>
-    <div style={{ width: '100%', height: 160 }}>
+    <h4>{s.def.label} ({s.def.unit})</h4>
+    <div style={{ width: '100%', height: 140 }}>
       <ResponsiveContainer>
-        <AreaChart data={data}>
-          <defs>
-            <linearGradient id={`grad-${label}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-              <stop offset="95%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
+        <AreaChart data={s.data}>
+          <defs><linearGradient id={`g-${s.def.type}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={s.def.color} stopOpacity={0.3} />
+            <stop offset="95%" stopColor={s.def.color} stopOpacity={0} />
+          </linearGradient></defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#30363d" />
           <XAxis dataKey="date" hide />
-          <YAxis stroke="#8b949e" fontSize={10} width={40} />
-          <Tooltip contentStyle={{ backgroundColor: '#161b22', border: '1px solid #30363d', borderRadius: '8px', fontSize: '12px' }} />
-          <Area type="monotone" dataKey="value" stroke={color} fillOpacity={1} fill={`url(#grad-${label})`} isAnimationActive={false} />
+          <YAxis stroke="#8b949e" fontSize={10} width={45} />
+          <Tooltip contentStyle={{ backgroundColor: '#161b22', border: '1px solid #30363d', borderRadius: 8, fontSize: 12 }} />
+          <Area type="monotone" dataKey="value" stroke={s.def.color} fillOpacity={1} fill={`url(#g-${s.def.type})`} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -246,127 +254,106 @@ const MiniChart: React.FC<{ data: { date: string; value: number }[]; color: stri
 
 function App() {
   const [readings, setReadings] = useState<BiometricReading[]>([]);
-  const [hasData, setHasData] = useState(false);
+  const hasData = readings.length > 0;
+  const { summaries, anomalies, recs, score } = hasData ? analyze(readings) : { summaries: [], anomalies: [], recs: [], score: 0 };
+  const motivation = hasData ? getMotivation(score, summaries) : null;
 
-  const handleData = (data: BiometricReading[]) => {
-    setReadings(data);
-    setHasData(data.length > 0);
-  };
-
-  const sleep = hasData ? summarize(readings, 'SLEEP_ANALYSIS', 'Sleep Duration', 'min', SLEEP_NORMAL.low, SLEEP_NORMAL.high) : null;
-  const hrv = hasData ? summarize(readings, 'HRV_RMSSD', 'HRV (RMSSD)', 'ms', HRV_NORMAL.low, HRV_NORMAL.high) : null;
-  const steps = hasData ? summarize(readings, 'STEP_COUNT', 'Daily Steps', 'steps', STEPS_NORMAL.low, STEPS_NORMAL.high) : null;
-  const hr = hasData ? summarize(readings, 'RESTING_HEART_RATE', 'Resting Heart Rate', 'bpm', HR_NORMAL.low, HR_NORMAL.high) : null;
-  const anomalies = hasData ? detectAnomalies(readings) : [];
-  const summaries = [sleep, hrv, steps, hr];
-  const recs = hasData ? generateRecommendations(summaries, anomalies) : [];
+  const sleepMetrics = summaries.filter(s => s.def.category === 'sleep');
+  const activityMetrics = summaries.filter(s => s.def.category === 'activity');
+  const heartMetrics = summaries.filter(s => s.def.category === 'heart');
+  const recoveryMetrics = summaries.filter(s => s.def.category === 'recovery');
 
   return (
     <div className="App premium-theme">
       <nav className="Sidebar">
-        <div className="Logo">
-          <ShieldCheck size={32} color="#58a6ff" />
-          <span>BioGuardian</span>
-        </div>
-        <div className="Nav-Items">
-          <div className="Nav-Item active"><BarChart3 size={20} /> Dashboard</div>
-        </div>
-        <div className="Privacy-Indicator">
-          <Lock size={14} />
-          <span>LOCAL ONLY</span>
-        </div>
+        <div className="Logo"><ShieldCheck size={32} color="#58a6ff" /><span>BioGuardian</span></div>
+        <div className="Nav-Items"><div className="Nav-Item active"><BarChart3 size={20} /> Dashboard</div></div>
+        <div className="Privacy-Indicator"><Lock size={14} /><span>LOCAL ONLY</span></div>
       </nav>
 
       <main className="Main-Content">
         <header className="Top-Bar">
           <div className="Header-Left">
             <h1>BioGuardian</h1>
-            <span className="Patient-Badge">
-              {hasData ? `${readings.length} readings loaded | ${new Set(readings.map(r => r.type)).size} biometric types` : 'Import your health data to begin'}
-            </span>
+            <span className="Patient-Badge">{hasData ? `${readings.length} readings | ${summaries.length} metrics analyzed` : 'Import your health data to begin'}</span>
           </div>
         </header>
 
         <section className="Simple-Dashboard">
-          <CsvUpload onDataLoaded={handleData} />
+          <CsvUpload onDataLoaded={setReadings} />
 
-          {hasData && (
-            <>
-              {/* Metric cards */}
-              <div className="Metrics-Row">
-                {sleep && <MetricCard summary={sleep} icon={<Moon size={24} />} color="#a78bfa" />}
-                {hrv && <MetricCard summary={hrv} icon={<Heart size={24} />} color="#f472b6" />}
-                {steps && <MetricCard summary={steps} icon={<Footprints size={24} />} color="#34d399" />}
-                {hr && <MetricCard summary={hr} icon={<Heart size={24} />} color="#fb923c" />}
+          {hasData && motivation && (
+            <div className={`Card Motivation-Card tone-${motivation.tone}`}>
+              <div className="Motivation-Score"><Target size={20} /><span className="Score-Value">{score}%</span><span className="Score-Label">Health Score</span></div>
+              <div className="Motivation-Body">
+                <span className="Motivation-Emoji">{motivation.emoji}</span>
+                <div><h3>{motivation.headline}</h3><p>{motivation.body}</p></div>
               </div>
+            </div>
+          )}
 
-              {/* Charts */}
-              <div className="Charts-Row">
-                {sleep && sleep.data.length > 1 && <MiniChart data={sleep.data} color="#a78bfa" label="Sleep Duration (min)" />}
-                {hrv && hrv.data.length > 1 && <MiniChart data={hrv.data} color="#f472b6" label="HRV RMSSD (ms)" />}
-                {steps && steps.data.length > 1 && <MiniChart data={steps.data} color="#34d399" label="Daily Steps" />}
-                {hr && hr.data.length > 1 && <MiniChart data={hr.data} color="#fb923c" label="Resting HR (bpm)" />}
+          {sleepMetrics.length > 0 && (<>
+            <h3 className="Section-Title"><Moon size={18} /> Sleep</h3>
+            <div className="Metrics-Row">{sleepMetrics.map(s => <MetricCard key={s.def.type} s={s} />)}</div>
+            <div className="Charts-Row">{sleepMetrics.filter(s => s.data.length > 1).map(s => <MiniChart key={s.def.type} s={s} />)}</div>
+          </>)}
+
+          {activityMetrics.length > 0 && (<>
+            <h3 className="Section-Title"><Footprints size={18} /> Activity</h3>
+            <div className="Metrics-Row">{activityMetrics.map(s => <MetricCard key={s.def.type} s={s} />)}</div>
+            <div className="Charts-Row">{activityMetrics.filter(s => s.data.length > 1).map(s => <MiniChart key={s.def.type} s={s} />)}</div>
+          </>)}
+
+          {heartMetrics.length > 0 && (<>
+            <h3 className="Section-Title"><Heart size={18} /> Heart</h3>
+            <div className="Metrics-Row">{heartMetrics.map(s => <MetricCard key={s.def.type} s={s} />)}</div>
+            <div className="Charts-Row">{heartMetrics.filter(s => s.data.length > 1).map(s => <MiniChart key={s.def.type} s={s} />)}</div>
+          </>)}
+
+          {recoveryMetrics.length > 0 && (<>
+            <h3 className="Section-Title"><Battery size={18} /> Recovery & Stress</h3>
+            <div className="Metrics-Row">{recoveryMetrics.map(s => <MetricCard key={s.def.type} s={s} />)}</div>
+            <div className="Charts-Row">{recoveryMetrics.filter(s => s.data.length > 1).map(s => <MiniChart key={s.def.type} s={s} />)}</div>
+          </>)}
+
+          {anomalies.length > 0 && (
+            <div className="Card Anomalies-Card">
+              <div className="Card-Header"><AlertTriangle size={18} /><h3>Anomalies ({anomalies.length})</h3></div>
+              <div className="Anomaly-List">
+                {anomalies.map((a, i) => (
+                  <div key={i} className={`Anomaly-Item severity-${a.severity}`}>
+                    <div className="Anomaly-Header"><span className={`Severity-Dot ${a.severity}`} /><strong>{a.message}</strong></div>
+                    <div className="Anomaly-Detail"><span>{a.date}</span><span>Expected: {a.expected}</span></div>
+                  </div>
+                ))}
               </div>
+            </div>
+          )}
 
-              {/* Anomalies */}
-              {anomalies.length > 0 && (
-                <div className="Card Anomalies-Card">
-                  <div className="Card-Header">
-                    <AlertTriangle size={18} />
-                    <h3>Anomalies Detected ({anomalies.length})</h3>
-                  </div>
-                  <div className="Anomaly-List">
-                    {anomalies.map((a, i) => (
-                      <div key={i} className={`Anomaly-Item severity-${a.severity}`}>
-                        <div className="Anomaly-Header">
-                          <span className={`Severity-Dot ${a.severity}`} />
-                          <strong>{a.message}</strong>
-                        </div>
-                        <div className="Anomaly-Detail">
-                          <span>{a.date}</span>
-                          <span>Value: {Math.round(a.value)}</span>
-                          <span>Expected: {a.expected}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Recommendations */}
-              <div className="Card Recs-Card">
-                <div className="Card-Header">
-                  <Stethoscope size={18} />
-                  <h3>Recommendations ({recs.length})</h3>
-                </div>
-                <div className="Recs-List">
-                  {recs.map((rec, i) => (
-                    <div key={i} className={`Rec-Card priority-${rec.priority}`}>
-                      <div className="Rec-Icon">
-                        {rec.category === 'supplement' ? <Pill size={20} /> : rec.category === 'doctor' ? <Stethoscope size={20} /> : <Footprints size={20} />}
-                      </div>
-                      <div className="Rec-Content">
-                        <div className="Rec-Title">
-                          <strong>{rec.title}</strong>
-                          <span className={`Priority-Tag ${rec.priority}`}>{rec.priority.toUpperCase()}</span>
-                          <span className="Category-Tag">{rec.category}</span>
-                        </div>
-                        <p>{rec.detail}</p>
-                        <span className="Rec-Source">{rec.source}</span>
-                      </div>
+          {recs.length > 0 && (
+            <div className="Card Recs-Card">
+              <div className="Card-Header"><Stethoscope size={18} /><h3>Recommendations ({recs.length})</h3></div>
+              <div className="Recs-List">
+                {recs.map((r, i) => (
+                  <div key={i} className={`Rec-Card priority-${r.priority}`}>
+                    <div className="Rec-Icon">{r.cat === 'supplement' ? <Pill size={20} /> : r.cat === 'doctor' ? <Stethoscope size={20} /> : <Footprints size={20} />}</div>
+                    <div className="Rec-Content">
+                      <div className="Rec-Title"><strong>{r.title}</strong><span className={`Priority-Tag ${r.priority}`}>{r.priority.toUpperCase()}</span><span className="Category-Tag">{r.cat}</span></div>
+                      <p>{r.detail}</p>
+                      <span className="Rec-Source">{r.source}</span>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-            </>
+            </div>
           )}
 
           {!hasData && (
             <div className="Empty-Dashboard Card">
               <Moon size={48} className="Empty-Icon" />
               <h3>Import Your Health Data</h3>
-              <p>Drop a CSV export from Apple Health, Garmin Connect, or any tracker above. BioGuardian will analyze your sleep and activity patterns, detect anomalies, and generate personalised recommendations.</p>
-              <p className="Empty-Hint">All analysis runs locally in your browser. No data is transmitted anywhere.</p>
+              <p>Drop a CSV from Garmin Connect, Apple Health, Fitbit, or Oura. BioGuardian analyzes sleep stages, activity levels, heart metrics, stress, and recovery — then generates personalised recommendations.</p>
+              <p className="Empty-Hint">All analysis runs locally. No data is transmitted.</p>
             </div>
           )}
         </section>
