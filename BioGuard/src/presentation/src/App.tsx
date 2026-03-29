@@ -6,8 +6,8 @@ import {
 } from 'lucide-react';
 import CsvUpload, { BiometricReading } from './components/CsvUpload';
 import ActionChecklist from './components/ActionChecklist';
-import { runCrossMetricAnalysis, AnalysisReport } from './analysis';
-import { generateHealthReport, HealthReport, SystemAssessment } from './healthAssessment';
+import { runCrossMetricAnalysis } from './analysis';
+import { generateHealthReport } from './healthAssessment';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import './App.css';
 

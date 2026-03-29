@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, FileText, CheckCircle2, AlertTriangle, X, Table, Moon, Footprints } from 'lucide-react';
+import { Upload, FileText, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 
 export interface BiometricReading {
   timestamp: string;

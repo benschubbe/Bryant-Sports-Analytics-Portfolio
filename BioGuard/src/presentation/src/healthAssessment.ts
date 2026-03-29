@@ -151,6 +151,12 @@ function assessSleep(readings: BiometricReading[]): SystemAssessment {
       actions.push('REM sleep occurs primarily in the last 2-3 hours of sleep. Extending total sleep time is the most effective way to increase REM. (Carskadon & Dement, Principles of Sleep Medicine, 2017)'); }
   }
 
+  if (light.length > 0 && duration.length > 0) {
+    const lightPct = r((avg(light) / avg(duration)) * 100);
+    findings.push(`Light sleep: ${r(avg(light))} min/night (${lightPct}% of total)`);
+    if (lightPct > 65) { concerns.push(`Light sleep at ${lightPct}% — high ratio may indicate fragmented sleep. Deep and REM stages are underrepresented`); score -= 5; }
+  }
+
   // Sleep consistency (circadian regularity)
   if (daily.values.length >= 7) {
     const consistency = std(daily.values);
@@ -255,6 +261,19 @@ function assessCardio(readings: BiometricReading[]): SystemAssessment {
     if (avgVo2 >= 45) { score += 10; findings.push('Cardiorespiratory fitness is above average — strong predictor of longevity'); }
     else if (avgVo2 < 30) { score -= 10; concerns.push(`VO2 Max ${avgVo2} is below average. Low CRF is a stronger mortality predictor than smoking, diabetes, or hypertension`);
       actions.push('Improve VO2 Max: 4x4 interval protocol (4min at 90-95% max HR, 3min recovery, repeat 4x). Most evidence-based protocol for CRF improvement. (Wisloff et al., Circulation, 2007)'); }
+  }
+
+  // Average and max heart rate
+  if (avgHr.length > 0) {
+    findings.push(`Average heart rate: ${r(avg(avgHr))} bpm`);
+  }
+  if (maxHr.length > 0) {
+    const avgMax = r(avg(maxHr));
+    findings.push(`Max heart rate observed: ${avgMax} bpm`);
+    if (restingHr.length > 0) {
+      const reserve = avgMax - avg(restingHr);
+      findings.push(`Heart rate reserve: ${r(reserve)} bpm (higher is better for exercise capacity)`);
+    }
   }
 
   const cardioScore = Math.max(0, Math.min(100, score));
