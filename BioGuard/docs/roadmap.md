@@ -8,7 +8,7 @@
 |-------|-------|-------------|
 | 0-2 | Schema Lock | Pydantic schemas merged, LLM latency confirmed, scope signed, fallbacks committed |
 | 2-10 | Parallel Build | Scribe + Pharmacist (AI Lead), Correlation Engine (Data Scientist), Auditor YAML (Reg. Lead), React shell (Full-Stack) |
-| 10-18 | Integration | LangGraph wires all 4 agents, Compliance Auditor gates every output, React connects to live agents |
+| 10-18 | Integration | Pipeline wires all 4 agents, Compliance Auditor gates every output, React connects to live agents |
 | 18-22 | Hardening | Happy path 5x, fallbacks verified, demo device locked, intentional block rehearsed |
 | 22-24 | Pitch | 3-min presentation rehearsed, fallback video recorded, closing sentence memorized |
 
@@ -19,7 +19,7 @@
 - The Pharmacist: drug names + lab JSON -> openFDA contraindication flags
 - The Correlation Engine: HealthKit CSV -> AnomalySignal with Pearson r, p-value, CI
 - The Compliance Auditor: 47 deterministic predicate rules (YAML config)
-- LangGraph orchestration: stateful directed graph, 4 agents
+- Sequential pipeline: 4 agents executed in order via pipeline.py
 - MCP server: typed tool schemas, sandboxed on-device
 - React dashboard: upload, drug input, status feed, Physician Brief output
 - gRPC telemetry gateway: FHIR R4 normalization, audit chain

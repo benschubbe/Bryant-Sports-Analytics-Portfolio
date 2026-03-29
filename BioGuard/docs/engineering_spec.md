@@ -14,13 +14,13 @@ BioGuardian is a four-layer, on-device clinical intelligence system. Every archi
 | Layer | Runtime | Port | Responsibility |
 |-------|---------|------|---------------|
 | **Ingestion** | Node.js + gRPC | 50051 (gRPC), 50052 (WS) | Biometric telemetry normalization, FHIR R4 coding, audit chain |
-| **Orchestration** | Python + Flask | 8000 | LangGraph multi-agent swarm, Pydantic contracts, compliance gate |
+| **Orchestration** | Python + Flask | 8000 | Sequential pipeline, MCP contracts, compliance gate |
 | **Simulation** | Python + NumPy | (imported) | Metabolic state-space modeling, pharmacodynamic modulation |
 | **Presentation** | React + TypeScript | 3000 | Dashboard, 3D visualization, Physician Brief renderer |
 
 ### 1.2 Why These Technologies
 
-- **LangGraph over CrewAI**: LangGraph's stateful directed graph with conditional routing and checkpointing survives partial agent failure without corrupting downstream state. CrewAI lacks formal state management for clinical workflows.
+- **Sequential Pipeline** (`pipeline.py`): Four agents executed in order with typed dict state. MCP tool schemas enable agent hot-swap without pipeline changes.
 - **MCP over custom RPC**: Model Context Protocol provides typed tool schemas with sandboxed processes, making agents hot-swappable against their interface contracts.
 - **Embedded Vector Store** (`vector_store.py`): NumPy-based cosine similarity with 20 LOINC reference embeddings, character trigram hashing, sub-millisecond retrieval.
 - **SQLite (WAL mode)**: Thread-safe concurrent reads, zero-config persistence for telemetry and simulation history.
@@ -65,14 +65,14 @@ BioGuardian is a four-layer, on-device clinical intelligence system. Every archi
 
 ## 3. Data Schemas (Pydantic v2, Locked at Hour 0)
 
-All inter-agent communication is typed via frozen Pydantic models in `src/orchestration/models.py`:
+All inter-agent communication uses typed dict contracts enforced within `src/orchestration/pipeline.py`:
 
 ```python
 class LabPanel(BaseModel):        # LOINC code, value, unit, reference range, PDF hash
 class ContraindicationFlag(BaseModel):  # drug pair, severity, FDA report count, personalised risk
 class AnomalySignal(BaseModel):   # biometric, protocol event, Pearson r, p-value, CI, window
 class PhysicianBrief(BaseModel):  # SOAP note, lab/drug/anomaly flags, audit hash, compliance version
-class AgentState(BaseModel):      # Mutable state propagated between LangGraph agents
+class AgentState(BaseModel):      # Mutable state propagated between pipeline agents
 ```
 
 Validators enforce: UTC timestamps, LOINC code format (`^\d{1,5}-\d$`), p < 0.05, window >= 72h, Pearson r in [-1, 1], drug pair distinctness.
@@ -128,9 +128,10 @@ Minimal Model of Glucose-Insulin Kinetics (Bergman et al., 1979):
 
 ```
 src/orchestration/tests/
-  test_auditor.py              — 74 tests: 47 rules x (pos/neg examples) + chain integrity
-  test_integration_stubs.py    — Mock agent stubs for integration fallback
-  test_models.py               — Pydantic schema contract validation
+  test_auditor.py       — 65 compliance tests (word boundary, negation, context, severity)
+  test_correlation.py   — 31 statistical tests (Pearson, Welch, Cohen's d, Bonferroni)
+  test_pipeline.py      — 10 end-to-end pipeline tests
+  test_vector_store.py  — 14 vector store + MCP server tests
 ```
 
 All auditor tests validate against the actual `rules.yaml` — 5 positive and 5 negative examples per critical rule category.

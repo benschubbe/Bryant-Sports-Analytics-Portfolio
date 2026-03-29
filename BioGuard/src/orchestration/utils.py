@@ -3,7 +3,7 @@ BioGuardian Shared Utilities
 ==============================
 
 Common functions used across the orchestration layer. Extracted from
-repeated patterns in main.py, models.py, database.py, and auditor/engine.py
+repeated patterns in pipeline.py, database.py, and auditor/engine.py
 to eliminate duplication and ensure consistent behaviour.
 """
 
