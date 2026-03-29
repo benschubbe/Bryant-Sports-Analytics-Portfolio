@@ -1293,7 +1293,13 @@ body {
 .tone-urgent .Score-Value { color: var(--danger); }
 
 /* --- CSV Upload --- */
-.CsvUpload-Card { grid-column: span 2; }
+.Import-Row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 768px) { .Import-Row { grid-template-columns: 1fr; } }
+.CsvUpload-Card { }
 .CsvUpload-Card .Card-Header { display: flex; justify-content: space-between; align-items: center; }
 .Clear-Btn {
   background: none; border: 1px solid var(--border-color); border-radius: 4px;

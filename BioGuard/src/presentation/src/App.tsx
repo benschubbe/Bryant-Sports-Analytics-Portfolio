@@ -253,9 +253,11 @@ const MiniChart: React.FC<{ s: Summary }> = ({ s }) => (
 // ---------------------------------------------------------------------------
 
 function App() {
-  const [readings, setReadings] = useState<BiometricReading[]>([]);
-  const hasData = readings.length > 0;
-  const { summaries, anomalies, recs, score } = hasData ? analyze(readings) : { summaries: [], anomalies: [], recs: [], score: 0 };
+  const [sleepData, setSleepData] = useState<BiometricReading[]>([]);
+  const [activityData, setActivityData] = useState<BiometricReading[]>([]);
+  const allReadings = sleepData.concat(activityData);
+  const hasData = allReadings.length > 0;
+  const { summaries, anomalies, recs, score } = hasData ? analyze(allReadings) : { summaries: [], anomalies: [], recs: [], score: 0 };
   const motivation = hasData ? getMotivation(score, summaries) : null;
 
   const sleepMetrics = summaries.filter(s => s.def.category === 'sleep');
@@ -275,12 +277,15 @@ function App() {
         <header className="Top-Bar">
           <div className="Header-Left">
             <h1>BioGuardian</h1>
-            <span className="Patient-Badge">{hasData ? `${readings.length} readings | ${summaries.length} metrics analyzed` : 'Import your health data to begin'}</span>
+            <span className="Patient-Badge">{hasData ? `${allReadings.length} readings | ${summaries.length} metrics analyzed` : 'Import your health data to begin'}</span>
           </div>
         </header>
 
         <section className="Simple-Dashboard">
-          <CsvUpload onDataLoaded={setReadings} />
+          <div className="Import-Row">
+            <CsvUpload label="Import Sleep Data" hint="Garmin sleep export, Apple Health sleep, or CSV with sleep columns" onDataLoaded={setSleepData} />
+            <CsvUpload label="Import Activity Data" hint="Garmin activities, Apple Health steps/exercise, or CSV with activity columns" onDataLoaded={setActivityData} />
+          </div>
 
           {hasData && motivation && (
             <div className={`Card Motivation-Card tone-${motivation.tone}`}>
@@ -352,8 +357,8 @@ function App() {
             <div className="Empty-Dashboard Card">
               <Moon size={48} className="Empty-Icon" />
               <h3>Import Your Health Data</h3>
-              <p>Drop a CSV from Garmin Connect, Apple Health, Fitbit, or Oura. BioGuardian analyzes sleep stages, activity levels, heart metrics, stress, and recovery — then generates personalised recommendations.</p>
-              <p className="Empty-Hint">All analysis runs locally. No data is transmitted.</p>
+              <p>Use the two upload areas above to import your sleep and activity data separately. Drop CSVs from Garmin Connect, Apple Health, Fitbit, or Oura. BioGuardian analyzes sleep stages, activity levels, heart metrics, stress, and recovery — then generates personalised recommendations.</p>
+              <p className="Empty-Hint">All analysis runs locally in your browser. No data is transmitted anywhere.</p>
             </div>
           )}
         </section>
