@@ -843,3 +843,175 @@ body {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+
+/* Clinical Premium Theme for Physician Brief */
+.clinical-theme {
+  border: 1px solid var(--accent-color) !important;
+  box-shadow: 0 0 25px rgba(88, 166, 255, 0.15) !important;
+  background: #0d1117 !important;
+}
+
+.Service-Identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+}
+
+.Brief-Header h2 {
+  font-family: "SF Pro Display", -apple-system, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+}
+
+.Audit-Proof {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  background: rgba(0,0,0,0.3);
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.Brief-Grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.Section {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.Summary-Section, .SOAP-Section {
+  grid-column: span 2;
+}
+
+.summary-text {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 10px 0;
+}
+
+.Lab-Grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.Lab-Mini-Card {
+  background: rgba(0,0,0,0.2);
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.lab-name { font-size: 0.75rem; color: var(--text-secondary); }
+.lab-value { font-size: 1.1rem; font-weight: 700; margin: 4px 0; }
+.lab-ref { font-size: 0.7rem; opacity: 0.6; }
+
+.Drug-Alert-Card {
+  border-left: 4px solid var(--warning);
+  background: rgba(241, 224, 90, 0.05);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.Drug-Alert-Card.critical { border-left-color: var(--danger); background: rgba(248, 81, 73, 0.05); }
+
+.Alert-Title {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+}
+
+.severity-tag {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--border-color);
+}
+
+.Alert-Metrics {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.Correlation-Card {
+  background: rgba(0,0,0,0.2);
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.Corr-Header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.Stats-Line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.Stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.Stat .label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-secondary); }
+.Stat .value { font-size: 1.1rem; font-weight: 700; }
+
+.Context-Tag {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.soap-content {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: #c9d1d9;
+  background: #010409;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.highlight-warning { color: var(--warning); }
+.highlight-danger { color: var(--danger); }
+.danger-text { color: var(--danger); }
+
+.Footer-Meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  font-family: monospace;
+  margin-bottom: 8px;
+}
+
+.legal-disclaimer {
+  font-size: 0.6rem !important;
+  opacity: 0.5;
+}

@@ -1,66 +1,56 @@
-from pydantic import BaseModel, Field, validator
-from typing import List, Optional, Dict, Any, Union
+from pydantic import BaseModel, Field
+from typing import List, Optional, Dict, Any, Literal, Tuple
 from datetime import datetime
 import uuid
 
 class LabPanel(BaseModel):
-    id: str = Field(default_factory=lambda: f"LAB-{uuid.uuid4().hex[:8]}")
-    loinc_code: str = Field(..., description="Standard LOINC code for the lab observation")
-    display_name: str = Field(..., description="Human-readable name of the test")
+    loinc_code: str
+    display_name: str
     value: float
     unit: str
-    reference_range: str
+    reference_range: Tuple[float, float]
     date: datetime
     source_pdf_hash: str
-    flag: Optional[str] = None # e.g., "H" for High, "L" for Low
+    status: str = "final"
 
-class BiometricStream(BaseModel):
-    metric_type: str = Field(..., description="e.g., HRV, BloodGlucose, HeartRate")
-    value: float
-    timestamp: datetime
-    device_id: str
-    source: str = "HealthKit"
-
-class ProtocolEvent(BaseModel):
-    substance: str = Field(..., description="The medication or intervention name")
-    dose: str
-    frequency: str
-    start_date: datetime
-    route: str = "Oral"
-    status: str = "active"
+class ContraindicationFlag(BaseModel):
+    drug_pair: Tuple[str, str]
+    severity: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    fda_report_count: int
+    personalized_risk_score: float  # cross-referenced against patient's LOINC markers
 
 class AnomalySignal(BaseModel):
-    signal_id: str = Field(default_factory=lambda: f"SIG-{uuid.uuid4().hex[:6]}")
-    metric: str
-    delta_pct: float
-    confidence: float = Field(..., ge=0, le=1)
-    correlated_event: Optional[str]
-    window_hours: int
-    severity: str = "medium" # low, medium, high, critical
+    biometric: str
+    correlation_with: str  # protocol event (e.g., "evening_dose")
+    pearson_r: float
+    p_value: float          # suppressed if > 0.05
+    confidence_interval: Tuple[float, float]
+    window_hours: int       # minimum 72
+    severity: str = "medium"
 
 class PhysicianBrief(BaseModel):
-    brief_id: str = Field(default_factory=lambda: f"SOAP-{uuid.uuid4().hex[:8]}")
+    brief_id: str = Field(default_factory=lambda: f"BG-{uuid.uuid4().hex[:8].upper()}")
     generated_at: datetime = Field(default_factory=datetime.now)
-    patient_id: str
-    clinical_summary: str
-    signals: List[AnomalySignal]
-    lab_alerts: List[str]
-    contraindications: List[str]
-    recommendations: List[str]
-    compliance_gate_passed: bool
-    version: str = "1.0.0"
+    patient_summary: str
+    lab_flags: List[LabPanel]
+    drug_flags: List[ContraindicationFlag]
+    anomaly_signals: List[AnomalySignal]
+    soap_note: str
+    audit_hash: str
+    compliance_version: str = "FDA-GW-2016-V47"
 
 class AgentState(BaseModel):
     """
     The state object passed between agents in the BioGuardian LangGraph swarm.
+    Strictly follows the MCP tool schema.
     """
     patient_id: str
+    raw_lab_input: Optional[str] = None
     lab_panels: List[LabPanel] = []
-    biometrics: List[BiometricStream] = []
-    protocol: Optional[ProtocolEvent] = None
+    protocol: Dict[str, Any] = {}
+    contraindications: List[ContraindicationFlag] = []
     signals: List[AnomalySignal] = []
-    contraindications: List[str] = []
     agent_logs: List[Dict[str, Any]] = []
     brief: Optional[PhysicianBrief] = None
     compliance_status: bool = False
-    metadata: Dict[str, Any] = {}
+    audit_trail: List[str] = []

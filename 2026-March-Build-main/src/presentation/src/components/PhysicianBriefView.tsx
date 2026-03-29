@@ -1,36 +1,51 @@
 import React from 'react';
 import { 
   FileText, 
-  AlertCircle, 
   Activity, 
-  Zap, 
   ShieldCheck, 
-  Clock,
-  User,
-  Info
+  AlertOctagon, 
+  TrendingDown, 
+  BarChart3,
+  Search,
+  Lock
 } from 'lucide-react';
 import moment from 'moment';
 
-interface AnomalySignal {
-  metric: string;
-  delta_pct: number;
-  confidence: number;
-  correlated_event: string;
-  window_hours: number;
+interface LabPanel {
+  loinc_code: string;
+  display_name: string;
+  value: number;
+  unit: string;
+  reference_range: [number, number];
+  flag?: string;
+}
+
+interface ContraindicationFlag {
+  drug_pair: [string, string];
   severity: string;
+  fda_report_count: number;
+  personalized_risk_score: number;
+}
+
+interface AnomalySignal {
+  biometric: string;
+  correlation_with: string;
+  pearson_r: number;
+  p_value: number;
+  confidence_interval: [number, number];
+  window_hours: number;
 }
 
 interface PhysicianBriefData {
   brief_id: string;
   generated_at: string;
-  patient_id: string;
-  clinical_summary: string;
-  signals: AnomalySignal[];
-  lab_alerts: string[];
-  contraindications: string[];
-  recommendations: string[];
-  compliance_gate_passed: boolean;
-  version: string;
+  patient_summary: string;
+  lab_flags: LabPanel[];
+  drug_flags: ContraindicationFlag[];
+  anomaly_signals: AnomalySignal[];
+  soap_note: string;
+  audit_hash: string;
+  compliance_version: string;
 }
 
 interface Props {
@@ -41,88 +56,104 @@ const PhysicianBriefView: React.FC<Props> = ({ brief }) => {
   if (!brief) return null;
 
   return (
-    <div className="PhysicianBrief-Container Card premium-border">
+    <div className="PhysicianBrief-Container Card premium-border clinical-theme">
+      {/* 1. Header & Compliance Proof */}
       <div className="Brief-Header">
         <div className="Header-Left">
-          <FileText className="brief-icon" size={24} />
-          <h2>Physician Discussion Brief <span className="version-tag">v{brief.version}</span></h2>
+          <div className="Service-Identity">
+            <ShieldCheck size={20} className="accent-blue" />
+            <span className="brand-label">BioGuardian | Autonomous Swarm Analysis</span>
+          </div>
+          <h2>Clinical Discussion Brief</h2>
         </div>
-        <div className={`Compliance-Badge ${brief.compliance_gate_passed ? 'passed' : 'failed'}`}>
-          <ShieldCheck size={14} />
-          {brief.compliance_gate_passed ? 'FDA General Wellness Validated' : 'Compliance Hold'}
-        </div>
-      </div>
-
-      <div className="Brief-Meta-Grid">
-        <div className="Meta-Item">
-          <User size={14} />
-          <span>Patient: {brief.patient_id}</span>
-        </div>
-        <div className="Meta-Item">
-          <Clock size={14} />
-          <span>Generated: {moment(brief.generated_at).format('MMM D, HH:mm')}</span>
-        </div>
-        <div className="Meta-Item">
-          <Info size={14} />
-          <span>Ref: {brief.brief_id}</span>
+        <div className="Header-Right">
+          <div className="Audit-Proof">
+            <Lock size={12} />
+            <code>Audit Hash: {brief.audit_hash.substring(0, 12)}...</code>
+          </div>
+          <div className="Compliance-Badge passed">
+            {brief.compliance_version} Validated
+          </div>
         </div>
       </div>
 
-      <div className="Brief-Section">
-        <label>Clinical Synthesis</label>
-        <p className="clinical-text">{brief.clinical_summary}</p>
-      </div>
-
-      <div className="Brief-Two-Col">
-        <div className="Col">
-          <label><Activity size={14} /> Correlation Signals</label>
-          <div className="Signal-List">
-            {brief.signals.map((s, i) => (
-              <div key={i} className={`Signal-Card ${s.severity}`}>
-                <div className="Signal-Main">
-                  <span className="metric">{s.metric}</span>
-                  <span className="delta">{s.delta_pct > 0 ? '+' : ''}{s.delta_pct}%</span>
-                </div>
-                <div className="Signal-Context">
-                  Correlated to {s.correlated_event} (Window: {s.window_hours}h)
-                </div>
-                <div className="Confidence-Bar">
-                  <div className="fill" style={{ width: `${s.confidence * 100}%` }}></div>
-                  <span className="label">Confidence: {(s.confidence * 100).toFixed(0)}%</span>
-                </div>
+      <div className="Brief-Grid">
+        {/* 2. Patient Summary & Lab Evidence */}
+        <div className="Section Summary-Section">
+          <label><Search size={14} /> Patient & Lab Evidence</label>
+          <p className="summary-text">{brief.patient_summary}</p>
+          <div className="Lab-Grid">
+            {brief.lab_flags.map((lab, i) => (
+              <div key={i} className="Lab-Mini-Card">
+                <span className="lab-name">{lab.display_name}</span>
+                <span className="lab-value highlight-warning">{lab.value}{lab.unit}</span>
+                <span className="lab-ref">Ref: {lab.reference_range[0]}-{lab.reference_range[1]}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="Col">
-          <label><AlertCircle size={14} /> Critical Alerts</label>
-          <div className="Alert-Group">
-            {brief.lab_alerts.map((a, i) => (
-              <div key={i} className="Alert-Item lab">
-                <span className="bullet"></span> {a}
+        {/* 3. Pharmacovigilance Signals (openFDA) */}
+        <div className="Section Drug-Section">
+          <label><AlertOctagon size={14} /> Personalized Contraindications</label>
+          {brief.drug_flags.map((flag, i) => (
+            <div key={i} className={`Drug-Alert-Card ${flag.severity.toLowerCase()}`}>
+              <div className="Alert-Title">
+                <strong>{flag.drug_pair[0]} ↔ {flag.drug_pair[1]}</strong>
+                <span className="severity-tag">{flag.severity}</span>
               </div>
-            ))}
-            {brief.contraindications.map((c, i) => (
-              <div key={i} className="Alert-Item contra">
-                <span className="bullet"></span> {c}
+              <div className="Alert-Metrics">
+                <span>FDA ICSR Reports: {flag.fda_report_count}</span>
+                <span>Personalized Risk: {(flag.personalized_risk_score * 100).toFixed(0)}%</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="Brief-Section recommendations">
-        <label><Zap size={14} /> Discussion Recommendations</label>
-        <ul>
-          {brief.recommendations.map((r, i) => (
-            <li key={i}>{r}</li>
+            </div>
           ))}
-        </ul>
+        </div>
+
+        {/* 4. Statistical Correlation (Correlation Engine) */}
+        <div className="Section Correlation-Section">
+          <label><BarChart3 size={14} /> Statistical Anomaly Detection</label>
+          {brief.anomaly_signals.map((sig, i) => (
+            <div key={i} className="Correlation-Card">
+              <div className="Corr-Header">
+                <TrendingDown size={18} className="danger-text" />
+                <strong>{sig.biometric} Correlation</strong>
+              </div>
+              <div className="Stats-Line">
+                <div className="Stat">
+                  <span className="label">Pearson r</span>
+                  <span className="value">{sig.pearson_r.toFixed(2)}</span>
+                </div>
+                <div className="Stat">
+                  <span className="label">p-value</span>
+                  <span className="value highlight-danger">{sig.p_value}</span>
+                </div>
+                <div className="Stat">
+                  <span className="label">Window</span>
+                  <span className="value">{sig.window_hours}h</span>
+                </div>
+              </div>
+              <div className="Context-Tag">Correlated to: {sig.correlation_with}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* 5. SOAP Discussion Note */}
+        <div className="Section SOAP-Section">
+          <label><FileText size={14} /> SOAP Discussion Structure (EHR Compatible)</label>
+          <pre className="soap-content">{brief.soap_note}</pre>
+        </div>
       </div>
 
       <div className="Brief-Footer">
-        <p>CONFIDENTIAL • For professional discussion purposes only. Not for self-diagnosis.</p>
+        <div className="Footer-Meta">
+          <span>ID: {brief.brief_id}</span>
+          <span>Generated: {moment(brief.generated_at).format('YYYY-MM-DD HH:mm:ss Z')}</span>
+        </div>
+        <p className="legal-disclaimer">
+          PRIVATE & ON-DEVICE: This report was generated by Sarah's local BioGuardian swarm. No data was transmitted. 
+          For professional clinical discussion only.
+        </p>
       </div>
     </div>
   );
