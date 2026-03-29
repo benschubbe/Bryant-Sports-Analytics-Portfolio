@@ -56,7 +56,9 @@ from orchestration.models import (
     PhysicianBrief,
     ReferenceRange,
 )
+from orchestration.mcp_server import MCPServer
 from orchestration.openfda_client import OpenFDAClient
+from orchestration.vector_store import get_clinical_store
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -79,6 +81,8 @@ _compliance = ComplianceEngine(
 )
 
 _openfda = OpenFDAClient()
+_mcp = MCPServer()
+_vector_store = get_clinical_store()
 
 logger.info(
     "Compliance Engine loaded: %s (%d rules, hash=%s)",
@@ -192,8 +196,14 @@ def scribe_agent(raw: dict[str, Any]) -> dict[str, Any]:
         raw_text = state.raw_lab_input or ""
         if len(raw_text) > 50 and any(k in raw_text.lower() for k in LOINC_TABLE):
             parsed = parse_lab_text(raw_text)
+            # Ground ambiguous values against vector store reference embeddings
+            for panel in parsed:
+                matches = _vector_store.search(panel["display_name"], top_k=1)
+                if matches and matches[0]["score"] > 0.3:
+                    ref = matches[0]
+                    panel.setdefault("clinical_context", ref.get("clinical_context", ""))
             labs = [LabPanel(**p) for p in parsed]
-            logger.info("[%s] The Scribe: parsed %d panels from raw text input.", pid, len(labs))
+            logger.info("[%s] The Scribe: parsed %d panels from raw text (vector store grounded).", pid, len(labs))
         else:
             # Use Sarah's pre-validated lab panels from the lab_parser module
             sarah_labs = generate_sarah_labs()
@@ -709,14 +719,19 @@ def run_simulation() -> tuple[Any, int]:
 @app.route("/v1/twin/history/<patient_id>", methods=["GET"])
 def get_history(patient_id: str) -> tuple[Any, int]:
     """Retrieve paginated telemetry and simulation history for a patient."""
-    limit = request.args.get("limit", default=20, type=int)
-    history = _db.get_history(patient_id, telemetry_limit=limit)
-    return jsonify({
-        "patient_id": patient_id,
-        "telemetry": [t.__dict__ for t in history.telemetry],
-        "simulations": [s.__dict__ for s in history.simulations],
-        "is_empty": history.is_empty,
-    }), 200
+    try:
+        limit = request.args.get("limit", default=20, type=int)
+        limit = max(1, min(limit, 100))  # clamp to [1, 100]
+        history = _db.get_history(patient_id, telemetry_limit=limit)
+        return jsonify({
+            "patient_id": patient_id,
+            "telemetry": [t.__dict__ for t in history.telemetry],
+            "simulations": [s.__dict__ for s in history.simulations],
+            "is_empty": history.is_empty,
+        }), 200
+    except Exception:
+        logger.exception("Failed to retrieve history for '%s'.", patient_id)
+        return jsonify({"status": "error", "message": "History retrieval failed."}), 500
 
 
 @app.route("/v1/health", methods=["GET"])
@@ -725,11 +740,19 @@ def health_check() -> tuple[Any, int]:
     return jsonify({
         "status": "healthy",
         "service": "BioGuardian Cerebellum",
-        "version": "2.3.0",
+        "version": "2.4.0",
         "compliance_engine": _compliance.version,
         "rules_loaded": _compliance.rule_count,
         "audit_chain_length": _audit.length,
+        "vector_store_size": _vector_store.size,
+        "mcp_tools": _mcp.schema_summary(),
     }), 200
+
+
+@app.route("/v1/mcp/tools", methods=["GET"])
+def list_mcp_tools() -> tuple[Any, int]:
+    """MCP tools/list — return all registered tool schemas."""
+    return jsonify({"tools": _mcp.list_tools()}), 200
 
 
 # ---------------------------------------------------------------------------

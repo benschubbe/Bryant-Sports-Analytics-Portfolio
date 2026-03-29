@@ -2,92 +2,93 @@
 
 **Clinical Intelligence Infrastructure** | Built by Yconic | 2026 Inter-Collegiate AI Hackathon
 
-**North Star:** Close the 4.3-day median ADE detection gap to same-day for chronically medicated patients wearing consumer wearables.
+**North Star:** Close the 4.3-day median ADE detection gap to same-day for chronically medicated patients.
 
 ---
 
-## The Problem
+## What's Built and Working
 
-The most dangerous 30 days in a patient's life are the ones right after their doctor writes a new prescription. Three data streams — clinical labs, biometric telemetry, and pharmacological event logs — exist in mature systems. No bridge connects them. No reasoning layer operates across them. No output format translates their correlation into language a physician can act on in a 15-minute consult.
+### The Four-Agent Swarm (LangGraph)
 
-**Sarah's Scenario:** Sarah (47, Type 2 Diabetic) starts a new statin alongside metformin and a magnesium supplement. Within 11 days, her HRV drops 22% in a consistent 4-hour post-dose window, sleep efficiency falls 18%, and fasting glucose creeps up. None of her three physicians share a system. Her next appointment is in six weeks. BioGuardian detects the signal (Pearson r=-0.84, p=0.012, 96h window) and generates a structured Physician Brief before clinical crisis.
+| Agent | Implementation | What It Does | Status |
+|-------|---------------|-------------|--------|
+| **The Scribe** | `lab_parser.py` + `vector_store.py` | Parses lab text into LOINC-coded JSON via 20-entry reference table and embedded vector store | Functional |
+| **The Pharmacist** | `openfda_client.py` | Live HTTP queries to `api.fda.gov/drug/event.json` with cached fallback | Functional |
+| **The Correlation Engine** | `correlation_engine.py` | Real NumPy Pearson r, Fisher z-transform 95% CI, p-value suppression | Functional |
+| **The Compliance Auditor** | `auditor/engine.py` + `rules.yaml` | 47 deterministic predicate rules (FDA GW 2016), non-LLM | Functional |
 
-## Architecture
+### Orchestration and Infrastructure
 
-### The Four-Agent Swarm (LangGraph + MCP)
+| Component | Implementation | Status |
+|-----------|---------------|--------|
+| **LangGraph Swarm** | `main.py` — stateful directed graph: scribe -> pharmacist -> correlation -> compliance -> END | Functional |
+| **MCP Tool Schemas** | `mcp_server.py` — typed JSON Schema input/output contracts for all 4 agents | Functional |
+| **Embedded Vector Store** | `vector_store.py` — NumPy cosine similarity, 20 LOINC reference embeddings | Functional |
+| **Pydantic Schemas** | `models.py` — frozen v2 models with validators (LOINC format, p < 0.05, window >= 72h) | Functional |
+| **Audit Chain** | `auditor/engine.py:AuditChain` — SHA-256 linked, integrity-verifiable | Functional |
+| **SQLite Persistence** | `database.py` — WAL mode, parameterised queries, telemetry + simulation tables | Functional |
+| **openFDA Client** | `openfda_client.py` — live FAERS queries with severity classification | Functional |
+| **gRPC Telemetry** | `server.js` — streaming gateway with FHIR R4/LOINC normalization | Functional |
+| **Mock Producer** | `mock_producer.js` — Sarah's 11-day ADE trajectory with Box-Muller noise | Functional |
+| **React Dashboard** | `App.tsx` + 7 components — 3D Twin, Physician Brief, audit trail | Functional |
+| **Metabolic Simulation** | `metabolic_engine.py` — Bergman minimal model with statin PD | Functional |
 
-| Agent | Input | Output | Accuracy |
-|-------|-------|--------|----------|
-| **The Scribe** | PDF lab report | LOINC-normalised JSON | 94% (200 de-identified PDFs) |
-| **The Pharmacist** | Drug names + lab JSON | openFDA contraindication flags | 18M+ FAERS reports |
-| **The Correlation Engine** | HealthKit time-series | AnomalySignal (Pearson r, p < 0.05) | 87% detection in 72h window |
-| **The Compliance Auditor** | Any agent output | PASS/BLOCK + rule codes | 47 deterministic predicate rules |
+### Privacy Architecture
 
-The Compliance Auditor is a **separate, non-LLM process** encoding FDA General Wellness 2016 guidance as unit-testable predicate logic. It cannot be prompted, jailbroken, or bypassed. Every output that passes carries the auditor version hash; every blocked output carries the specific rule code.
+All processing runs locally. No central server. No PHI transmitted externally.
+- Orchestration targets `localhost:8000` only
+- SHA-256 audit chain logs every agent action on-device
+- Agents communicate via typed MCP tool calls with no shared memory
 
-### The Stack
+### Compliance
 
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| Orchestration | LangGraph | Stateful directed graph with conditional routing and checkpointing |
-| Protocol | Model Context Protocol (MCP) | Typed tool schemas, agent hot-swap by interface contract |
-| Local LLM | Llama-3 8B via MLC LLM | 4-bit GPTQ, 1.4s benchmark on iPhone 14 Pro (measured) |
-| Vector Store | LanceDB | Embedded, zero-copy Apache Arrow, no server process |
-| OCR | Tesseract 5.0 + layout post-processing | 94% accuracy on non-standard multi-column formats |
-| Frontend | React + TypeScript + Three.js | 3D Neural Soma, SOAP Brief renderer, audit chain viewer |
-| Privacy | Topology-based | Zero raw PHI transmitted. No central repository to attack. |
+47 deterministic predicate rules (non-LLM) in 8 categories:
+- Diagnostic claims (8 rules) | Treatment claims (8) | Prescription modification (6)
+- Wellness framing (8) | Professional consultation (5) | Data integrity (6)
+- Privacy constraints (2) | Scope constraints (4)
 
-### Privacy by Topology
-
-There is no BioGuardian server to breach, subpoena, regulate, or monetise. The MCP server runs in a sandboxed process on-device. Agents communicate exclusively via typed tool calls with no shared memory. A SHA-256 hashed audit chain logs every agent action locally. This is not a privacy policy. It is a privacy proof.
-
-### Pydantic Schema Contracts (Locked at Hour 0)
-
-All inter-agent communication is typed. Schemas are frozen before any agent code is written:
-
-- `LabPanel` — LOINC code, value, unit, reference range, source PDF hash
-- `ContraindicationFlag` — drug pair, severity, FDA report count, personalised risk score
-- `AnomalySignal` — biometric, protocol event, Pearson r, p-value, 95% CI, window hours
-- `PhysicianBrief` — SOAP note, lab/drug/anomaly flags, audit hash, compliance version
-
-### Integration Fallback Stubs
-
-Mock agent stub implementations committed at Hour 0 ensure integration can be tested against known-good interfaces throughout parallel build. Each agent has a pre-validated fallback output that activates if the live pipeline fails.
+Every output PASS carries the auditor version hash. Every BLOCK carries the specific rule code.
 
 ## Testing
 
 ```bash
-# Run compliance auditor tests (47 rules, 5 pos / 5 neg per critical rule)
-python -m pytest src/orchestration/tests/test_auditor.py -v
-
-# Run integration stub contract tests
-python -m pytest src/orchestration/tests/test_integration_stubs.py -v
-
-# Run domain model validation tests
-python -m pytest src/orchestration/tests/test_models.py -v
+# 91 tests across 3 test suites
+python -m pytest src/orchestration/tests/test_auditor.py -v        # 74 tests — compliance rules
+python -m pytest src/orchestration/tests/test_correlation.py -v    # 17 tests — Pearson statistics
 ```
 
-## Demo Flow (5 Steps)
+## Demo Flow
 
-1. **PDF -> LOINC JSON** (The Scribe): CBC PDF enters, LOINC-normalised JSON exits.
-2. **Drug -> Contraindications** (The Pharmacist): Atorvastatin enters, openFDA flags with severity scores exit.
-3. **HealthKit -> AnomalySignal** (Correlation Engine): CSV enters, Pearson r with p-value and CI exits.
-4. **Compliance Gate** (Auditor): All outputs validated. Intentional block demonstrated as a scripted demo beat.
-5. **Physician Brief** (SOAP PDF): EHR-pasteable, audit chain hash in footer.
+1. **Lab Text -> LOINC JSON** (The Scribe): Text parsed via LOINC lookup + vector store RAG
+2. **Drug -> openFDA Flags** (The Pharmacist): Live api.fda.gov query, CK-personalised risk
+3. **Biometrics -> Pearson r** (Correlation Engine): NumPy computation, p < 0.05 threshold
+4. **Compliance Gate** (Auditor): 47 rules validated, intentional block demonstrated
+5. **Physician Brief** (SOAP output): Structured, EHR-pasteable, audit hash sealed
 
-## Hackathon Status
+## Stack
 
-- [x] LangGraph Swarm: 4 agents functional with typed state propagation
-- [x] Compliance Auditor: 47 FDA GW rules as deterministic predicate logic (non-LLM)
-- [x] Physician Brief: SOAP-structured, EHR-pasteable, audit hash sealed
-- [x] Integration Stubs: Mock agent outputs committed for fallback path
-- [x] Unit Tests: Auditor rules, model contracts, integration stubs
-- [x] Privacy Architecture: SHA-256 audit chain, zero PHI transmitted
-- [x] Sarah Scenario: End-to-end validated with pre-computed statistical results
-- [x] 3D Visualization: Neural Soma with glucose-responsive colour coding
-- [x] Type Safety: 100% Pydantic + TypeScript across all boundaries
+| Layer | Technology | Implementation |
+|-------|-----------|---------------|
+| Orchestration | LangGraph | Stateful directed graph with typed state |
+| Agent Contracts | MCP-compatible JSON Schema | Typed input/output per agent |
+| Vector Store | NumPy embedded store | Cosine similarity, 20 LOINC embeddings |
+| Statistics | NumPy | Pearson r, Fisher z-transform, t-distribution |
+| Drug Data | openFDA API | Live FAERS queries + cached fallback |
+| Compliance | Predicate logic (YAML) | 47 FDA GW rules, deterministic, non-LLM |
+| Persistence | SQLite (WAL) | Telemetry + simulation history |
+| Telemetry | Node.js + gRPC | FHIR R4 normalization, LOINC coding |
+| Frontend | React + TypeScript + Three.js | 3D visualization, SOAP brief renderer |
+| Simulation | Python + NumPy | Bergman minimal model, statin PD |
+
+## Not Yet Implemented (Roadmap)
+
+These features are described in the master plan but are **not in the current codebase**:
+- On-device LLM inference (MLC LLM / Llama-3 8B) — requires iOS deployment
+- Swift HealthKit bridge — requires physical iOS device; mock producer substitutes
+- Tesseract OCR pipeline — lab_parser.py handles text input; PDF OCR is Layer 2
+- FHIR R4 direct-pull from Epic/Cerner — Layer 2
+- Cloud sync, telehealth booking, Android support — Layer 2+
 
 ---
 
 *Built for the 2026 Inter-Collegiate AI Hackathon by Yconic.*
-*Clinical Intelligence Infrastructure — not a wellness app, not a diagnostic tool.*

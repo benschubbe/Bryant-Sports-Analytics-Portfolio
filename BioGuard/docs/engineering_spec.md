@@ -22,7 +22,7 @@ BioGuardian is a four-layer, on-device clinical intelligence system. Every archi
 
 - **LangGraph over CrewAI**: LangGraph's stateful directed graph with conditional routing and checkpointing survives partial agent failure without corrupting downstream state. CrewAI lacks formal state management for clinical workflows.
 - **MCP over custom RPC**: Model Context Protocol provides typed tool schemas with sandboxed processes, making agents hot-swappable against their interface contracts.
-- **LanceDB over ChromaDB/Pinecone** (target): Embedded zero-copy Apache Arrow format requires no server process. ChromaDB requires a server; Pinecone is cloud-only.
+- **Embedded Vector Store**: NumPy-based cosine similarity store with 20 LOINC reference embeddings (`vector_store.py`). In Layer 2, upgrades to LanceDB with Apache Arrow zero-copy memory mapping.
 - **SQLite (WAL mode)**: Thread-safe concurrent reads, zero-config persistence for telemetry and simulation history.
 
 ---
