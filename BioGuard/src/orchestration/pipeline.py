@@ -1,23 +1,17 @@
 """
-BioGuardian Sequential Pipeline
-=================================
+BioGuardian Pipeline & Server
+================================
 
-Standalone pipeline that executes all four agents in sequence without
-requiring LangGraph.  This is the functional core — every agent
-receives typed input, produces typed output, and passes state to
-the next agent via a plain dict.
+Four-agent sequential pipeline that produces a complete PhysicianBrief,
+plus a Flask REST API that exposes it over HTTP.
 
-The pipeline produces a complete PhysicianBrief with:
-  - LOINC-normalised lab panels (The Scribe)
-  - openFDA contraindication flags with personalised risk (The Pharmacist)
-  - NumPy Pearson correlation signals with p-values (The Correlation Engine)
-  - FDA GW compliance validation (The Compliance Auditor)
-  - SHA-256 sealed audit chain
-
-Usage:
+Pipeline (importable):
     from orchestration.pipeline import run_pipeline
     result = run_pipeline("PT-2026-SARAH", "Atorvastatin", "20mg")
-    print(result["brief"]["soap_note"])
+
+Server (runnable):
+    python -m orchestration.pipeline          # starts on port 8000
+    curl -X POST localhost:8000/v1/simulation/rehearse -d '{"patient_id":"PT-2026-SARAH"}'
 """
 
 from __future__ import annotations
@@ -311,3 +305,92 @@ def run_pipeline(
             "violations": validation.violation_count,
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Flask REST API
+# ---------------------------------------------------------------------------
+
+from flask import Flask, jsonify, request as flask_request
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
+
+
+@app.route("/v1/simulation/rehearse", methods=["POST"])
+def api_rehearse():
+    """Run the full pipeline for a patient and intervention."""
+    try:
+        body = flask_request.get_json(force=True) or {}
+    except Exception:
+        return jsonify({"status": "error", "message": "Invalid JSON."}), 400
+
+    pid = body.get("patient_id", "PT-2026-SARAH")
+    if not isinstance(pid, str) or not pid or len(pid) > 256:
+        return jsonify({"status": "error", "message": "Invalid patient_id."}), 400
+
+    intervention = body.get("intervention", {})
+    substance = intervention.get("substance") or intervention.get("drug") or "Atorvastatin"
+    dose = intervention.get("dose", "20mg")
+    raw_lab = body.get("raw_lab_text", "")
+
+    try:
+        result = run_pipeline(pid, substance, dose, raw_lab)
+        return jsonify(result), 200
+    except Exception:
+        logger.exception("Pipeline failed for %s", pid)
+        return jsonify({"status": "error", "message": "Pipeline execution failed."}), 500
+
+
+@app.route("/v1/twin/history/<patient_id>", methods=["GET"])
+def api_history(patient_id):
+    """Retrieve telemetry and simulation history."""
+    try:
+        from orchestration.database import BioGuardianDB
+        db = BioGuardianDB()
+        limit = flask_request.args.get("limit", default=20, type=int)
+        limit = max(1, min(limit, 100))
+        history = db.get_history(patient_id, telemetry_limit=limit)
+        return jsonify({
+            "patient_id": patient_id,
+            "telemetry": [t.__dict__ for t in history.telemetry],
+            "simulations": [s.__dict__ for s in history.simulations],
+            "is_empty": history.is_empty,
+        }), 200
+    except Exception:
+        logger.exception("History retrieval failed for %s", patient_id)
+        return jsonify({"status": "error", "message": "History retrieval failed."}), 500
+
+
+@app.route("/v1/health", methods=["GET"])
+def api_health():
+    """Health check with system status."""
+    try:
+        return jsonify({
+            "status": "healthy",
+            "service": "BioGuardian Pipeline",
+            "compliance_engine": _compliance.version,
+            "rules_loaded": _compliance.rule_count,
+            "vector_store_size": _vector_store.size,
+            "mcp_tools": _mcp.schema_summary(),
+        }), 200
+    except Exception:
+        return jsonify({"status": "degraded"}), 503
+
+
+@app.route("/v1/mcp/tools", methods=["GET"])
+def api_mcp_tools():
+    """MCP tools/list — return all registered tool schemas."""
+    try:
+        return jsonify({"tools": _mcp.list_tools()}), 200
+    except Exception:
+        return jsonify({"status": "error"}), 500
+
+
+if __name__ == "__main__":
+    logger.info(
+        "BioGuardian Pipeline server starting. Compliance: %s (%d rules).",
+        _compliance.version, _compliance.rule_count,
+    )
+    app.run(host="0.0.0.0", port=8000, debug=False)

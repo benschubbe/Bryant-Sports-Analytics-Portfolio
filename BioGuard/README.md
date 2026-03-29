@@ -6,16 +6,21 @@
 
 ---
 
-## Running the Demo
+## Running
 
 ```bash
+# CLI demo — prints full Physician Brief to stdout, writes JSON to demo_output.json
 python demo.py
-```
-
-Runs the complete four-agent pipeline for Sarah's statin ADE scenario. Produces a SOAP-structured Physician Brief with lab panels, openFDA drug flags, multi-stream Pearson correlation signals with Bonferroni correction, compliance validation against 47 FDA rules, and a sealed SHA-256 audit chain. Full JSON written to `demo_output.json`.
-
-```bash
 python demo.py --patient PT-CUSTOM --drug Simvastatin --dose 40mg
+
+# HTTP server — starts on port 8000, serves the React dashboard
+cd src && python -m orchestration.pipeline
+
+# API usage
+curl -X POST localhost:8000/v1/simulation/rehearse \
+  -d '{"patient_id":"PT-2026-SARAH","intervention":{"substance":"Atorvastatin","dose":"20mg"}}'
+curl localhost:8000/v1/health
+curl localhost:8000/v1/mcp/tools
 ```
 
 ## What's Built and Working
@@ -98,7 +103,7 @@ python -m pytest src/orchestration/tests/test_vector_store.py -v   # 14 — vect
 
 | Layer | Technology | File |
 |-------|-----------|------|
-| Pipeline | Sequential (Python) | `pipeline.py` |
+| Pipeline + Server | Sequential pipeline + Flask API | `pipeline.py` |
 | Agent Contracts | MCP JSON Schema | `mcp_server.py` |
 | Vector Store | NumPy embedded | `vector_store.py` |
 | Statistics | NumPy (Pearson, Welch, Cohen's d) | `correlation_engine.py` |
