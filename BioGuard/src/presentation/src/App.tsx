@@ -41,6 +41,11 @@ const METRICS: MetricDef[] = [
   { type: 'AVG_STRESS', label: 'Avg Stress', unit: 'pts', icon: 'wind', normLow: 0, normHigh: 40, color: '#ea580c', category: 'recovery' },
   { type: 'RESPIRATION_RATE', label: 'Respiration Rate', unit: 'brpm', icon: 'wind', normLow: 12, normHigh: 20, color: '#67e8f9', category: 'recovery' },
   { type: 'SPO2', label: 'SpO2', unit: '%', icon: 'wind', normLow: 95, normHigh: 100, color: '#06b6d4', category: 'recovery' },
+  { type: 'VO2_MAX', label: 'VO2 Max', unit: 'mL/kg/min', icon: 'heart', normLow: 30, normHigh: 60, color: '#e879f9', category: 'heart' },
+  { type: 'BODY_MASS', label: 'Weight', unit: 'kg', icon: 'zap', normLow: 50, normHigh: 100, color: '#a3a3a3', category: 'recovery' },
+  { type: 'BODY_FAT', label: 'Body Fat', unit: '%', icon: 'zap', normLow: 10, normHigh: 25, color: '#d4d4d4', category: 'recovery' },
+  { type: 'BP_SYSTOLIC', label: 'BP Systolic', unit: 'mmHg', icon: 'heart', normLow: 90, normHigh: 130, color: '#ef4444', category: 'heart' },
+  { type: 'BP_DIASTOLIC', label: 'BP Diastolic', unit: 'mmHg', icon: 'heart', normLow: 60, normHigh: 85, color: '#dc2626', category: 'heart' },
 ];
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -170,6 +175,19 @@ function buildRecs(summaries: Summary[], anomalies: Anomaly[]): Rec[] {
   if (spo2 && spo2.avg < 95) {
     recs.push({ cat: 'doctor', title: 'Low Blood Oxygen', detail: `SpO2 averaging ${spo2.avg}%. Values below 95% warrant medical evaluation — could indicate respiratory or cardiac issues.`, priority: 'high', source: 'Clinical threshold' });
   }
+  const bpSys = get('BP_SYSTOLIC');
+  if (bpSys && bpSys.avg > 130) {
+    recs.push({ cat: 'doctor', title: 'Elevated Blood Pressure', detail: `Systolic BP averaging ${Math.round(bpSys.avg)} mmHg. Above 130 is Stage 1 hypertension. Discuss with your physician.`, priority: 'high', source: 'AHA/ACC 2017 BP Guidelines' });
+    recs.push({ cat: 'supplement', title: 'Magnesium + Potassium', detail: 'Both minerals support healthy blood pressure. Magnesium 300-400mg, potassium via diet (bananas, sweet potatoes, spinach).', priority: 'medium', source: 'Zhang et al., Hypertension, 2016' });
+  }
+  const weight = get('BODY_MASS');
+  if (weight && weight.trend === 'up' && weight.trendPct > 3) {
+    recs.push({ cat: 'lifestyle', title: 'Weight Trending Up', detail: `Weight increased ${weight.trendPct.toFixed(1)}% over the period. Consider tracking caloric intake and adding 30 min daily movement.`, priority: 'medium', source: 'General wellness' });
+  }
+  const vo2 = get('VO2_MAX');
+  if (vo2 && vo2.avg < 30) {
+    recs.push({ cat: 'lifestyle', title: 'Improve Cardiovascular Fitness', detail: `VO2 Max at ${vo2.avg.toFixed(1)} mL/kg/min — below average. Zone 2 training 3-4x/week for 30-45 min is the most efficient way to improve this.`, priority: 'medium', source: 'AHA Fitness Guidelines' });
+  }
   if (anomalies.filter(a => a.severity === 'high').length >= 3) {
     recs.push({ cat: 'doctor', title: 'Multiple Anomalies', detail: `${anomalies.filter(a => a.severity === 'high').length} high-severity anomalies detected. Schedule a wellness check.`, priority: 'high', source: 'BioGuardian threshold' });
   }
@@ -257,7 +275,8 @@ const MiniChart: React.FC<{ s: Summary }> = ({ s }) => (
 function App() {
   const [sleepData, setSleepData] = useState<BiometricReading[]>([]);
   const [activityData, setActivityData] = useState<BiometricReading[]>([]);
-  const allReadings = sleepData.concat(activityData);
+  const [healthData, setHealthData] = useState<BiometricReading[]>([]);
+  const allReadings = sleepData.concat(activityData).concat(healthData);
   const hasData = allReadings.length > 0;
   const { summaries, anomalies, recs, score } = hasData ? analyze(allReadings) : { summaries: [], anomalies: [], recs: [], score: 0 };
   const motivation = hasData ? getMotivation(score, summaries) : null;
@@ -285,8 +304,9 @@ function App() {
 
         <section className="Simple-Dashboard">
           <div className="Import-Row">
-            <CsvUpload label="Import Sleep Data" hint="Garmin sleep export, Apple Health sleep, or CSV with sleep columns" onDataLoaded={setSleepData} />
-            <CsvUpload label="Import Activity Data" hint="Garmin activities, Apple Health steps/exercise, or CSV with activity columns" onDataLoaded={setActivityData} />
+            <CsvUpload label="Import Sleep Data" hint="Garmin sleep, Apple Health sleep, or CSV with sleep/HRV columns" onDataLoaded={setSleepData} />
+            <CsvUpload label="Import Activity Data" hint="Garmin activities, steps, distance, calories, intensity minutes" onDataLoaded={setActivityData} />
+            <CsvUpload label="Import Overall Health" hint="Heart rate, stress, body battery, SpO2, weight, blood pressure, or any health CSV" onDataLoaded={setHealthData} />
           </div>
 
           {hasData && motivation && (

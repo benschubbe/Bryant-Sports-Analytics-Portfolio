@@ -1295,10 +1295,11 @@ body {
 /* --- CSV Upload --- */
 .Import-Row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 16px;
 }
-@media (max-width: 768px) { .Import-Row { grid-template-columns: 1fr; } }
+@media (max-width: 1024px) { .Import-Row { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .Import-Row { grid-template-columns: 1fr; } }
 .CsvUpload-Card { }
 .CsvUpload-Card .Card-Header { display: flex; justify-content: space-between; align-items: center; }
 .Clear-Btn {
