@@ -21,11 +21,12 @@ RAG retrieval for grounding ambiguous values against reference embeddings.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
+
+from orchestration.utils import sha256_bytes
 
 logger = logging.getLogger("BioGuardian.LabParser")
 
@@ -227,7 +228,7 @@ def parse_lab_text(text: str, source_hash: Optional[str] = None) -> List[Dict[st
         loinc_code, display_name, value, unit, reference_range, source_pdf_hash.
     """
     if source_hash is None:
-        source_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        source_hash = sha256_bytes(text.encode("utf-8"))
 
     panels: List[Dict[str, Any]] = []
     text_lower = text.lower()
@@ -277,7 +278,7 @@ def generate_sarah_labs() -> List[Dict[str, Any]]:
       - ALT: 32 U/L (normal — liver function for statin safety)
     """
     now = datetime.now(tz=timezone.utc).isoformat()
-    pdf_hash = hashlib.sha256(b"quest_diagnostics_sarah_cbc_2026").hexdigest()
+    pdf_hash = sha256_bytes(b"quest_diagnostics_sarah_cbc_2026")
 
     return [
         {

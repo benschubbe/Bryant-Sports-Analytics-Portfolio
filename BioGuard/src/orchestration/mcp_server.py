@@ -24,7 +24,6 @@ This server runs locally on-device.  No external network calls are made.
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any, Dict, List, Optional
 
