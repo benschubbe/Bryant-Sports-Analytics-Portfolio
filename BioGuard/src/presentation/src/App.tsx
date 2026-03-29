@@ -5,6 +5,7 @@ import {
   Zap, Battery, Wind, Target
 } from 'lucide-react';
 import CsvUpload, { BiometricReading } from './components/CsvUpload';
+import { runCrossMetricAnalysis, Insight, Correlation, TrendBreak, AnalysisReport } from './analysis';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import './App.css';
 
@@ -280,6 +281,7 @@ function App() {
   const hasData = allReadings.length > 0;
   const { summaries, anomalies, recs, score } = hasData ? analyze(allReadings) : { summaries: [], anomalies: [], recs: [], score: 0 };
   const motivation = hasData ? getMotivation(score, summaries) : null;
+  const crossAnalysis = hasData ? runCrossMetricAnalysis(allReadings) : null;
 
   const sleepMetrics = summaries.filter(s => s.def.category === 'sleep');
   const activityMetrics = summaries.filter(s => s.def.category === 'activity');
@@ -354,6 +356,44 @@ function App() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {crossAnalysis && crossAnalysis.insights.length > 0 && (
+            <div className="Card Insights-Card">
+              <div className="Card-Header"><BarChart3 size={18} /><h3>Cross-Metric Insights ({crossAnalysis.insights.length})</h3></div>
+              <div className="Insights-List">
+                {crossAnalysis.insights.map((ins, i) => (
+                  <div key={i} className={`Insight-Item category-${ins.category} priority-${ins.priority}`}>
+                    <div className="Insight-Title">
+                      <strong>{ins.title}</strong>
+                      <span className={`Priority-Tag ${ins.priority}`}>{ins.priority.toUpperCase()}</span>
+                      <span className="Category-Tag">{ins.category}</span>
+                    </div>
+                    <p>{ins.body}</p>
+                    {ins.evidence && <span className="Insight-Evidence">{ins.evidence}</span>}
+                  </div>
+                ))}
+              </div>
+              {crossAnalysis.correlations.length > 0 && (
+                <div className="Correlation-Matrix">
+                  <h4>Strongest Correlations</h4>
+                  <table>
+                    <thead><tr><th>Metric A</th><th>Metric B</th><th>Pearson r</th><th>Strength</th><th>Days</th></tr></thead>
+                    <tbody>
+                      {crossAnalysis.correlations.slice(0, 8).map((c, i) => (
+                        <tr key={i}>
+                          <td>{c.metricA.replace(/_/g, ' ')}</td>
+                          <td>{c.metricB.replace(/_/g, ' ')}</td>
+                          <td style={{color: c.r > 0 ? '#3fb950' : '#f85149'}}>{c.r.toFixed(2)}</td>
+                          <td>{c.strength}</td>
+                          <td>{c.n}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 

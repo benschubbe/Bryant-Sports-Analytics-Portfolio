@@ -1292,6 +1292,32 @@ body {
 .tone-urgent { border-left: 3px solid var(--danger); }
 .tone-urgent .Score-Value { color: var(--danger); }
 
+/* Insights */
+.Insights-Card { padding: 20px; }
+.Insights-Card .Card-Header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.Insights-List { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.Insight-Item {
+  padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);
+  background: rgba(22,27,34,0.6);
+}
+.Insight-Item.category-correlation { border-left: 3px solid #a78bfa; }
+.Insight-Item.category-pattern { border-left: 3px solid #22d3ee; }
+.Insight-Item.category-trend { border-left: 3px solid #fbbf24; }
+.Insight-Title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.Insight-Title strong { font-size: 14px; }
+.Insight-Item p { font-size: 13px; color: var(--text-secondary); margin: 0 0 4px; line-height: 1.5; }
+.Insight-Evidence { font-size: 11px; color: var(--text-secondary); opacity: 0.6; font-family: monospace; }
+
+.Correlation-Matrix { margin-top: 16px; }
+.Correlation-Matrix h4 { font-size: 13px; color: var(--text-secondary); margin: 0 0 8px; }
+.Correlation-Matrix table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.Correlation-Matrix th {
+  text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary); font-weight: 500;
+}
+.Correlation-Matrix td { padding: 5px 8px; border-bottom: 1px solid rgba(48,54,61,0.4); }
+.Correlation-Matrix tr:hover td { background: rgba(88,166,255,0.03); }
+
 /* --- CSV Upload --- */
 .Import-Row {
   display: grid;
