@@ -21,6 +21,7 @@ import ScenarioView from './components/ScenarioView';
 import SettingsView from './components/SettingsView';
 import PhysicianBriefView from './components/PhysicianBriefView';
 import AuditTrailView from './components/AuditTrailView';
+import CsvUpload, { BiometricReading } from './components/CsvUpload';
 import './App.css';
 
 // --- Environment Configuration ---
@@ -95,7 +96,27 @@ function App() {
   const [selectedDrug, setSelectedDrug] = useState('Atorvastatin');
   const [dosage, setDosage] = useState(20);
   const [demoMode, setDemoMode] = useState(false);
+  const [uploadedData, setUploadedData] = useState<BiometricReading[]>([]);
   const socketRef = useRef<Socket | null>(null);
+
+  const handleCsvLoaded = (readings: BiometricReading[]) => {
+    setUploadedData(readings);
+    // Feed readings into the chart
+    const glucoseReadings = readings.filter(r => r.type === 'BLOOD_GLUCOSE');
+    const hrvReadings = readings.filter(r => r.type === 'HRV_RMSSD');
+    const chartSource = glucoseReadings.length > 0 ? glucoseReadings : hrvReadings;
+    if (chartSource.length > 0) {
+      setChartData(chartSource.slice(-20).map(r => ({
+        time: new Date(r.timestamp).toLocaleTimeString(),
+        value: r.value,
+      })));
+      setBioState(prev => ({
+        ...prev,
+        glucose: chartSource[chartSource.length - 1].value,
+        source: `CSV Import (${readings.length} readings)`,
+      }));
+    }
+  };
 
   useEffect(() => {
     try {
@@ -253,6 +274,8 @@ function App() {
               </div>
               <MetabolicChart data={chartData} />
             </div>
+
+            <CsvUpload onDataLoaded={handleCsvLoaded} />
 
             <div className="Card Recommendations-Card">
               <div className="Card-Header">
