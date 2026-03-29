@@ -31,15 +31,14 @@ Design rationale (master plan §5):
 
 from __future__ import annotations
 
-import hashlib
-import json
-import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+from orchestration.utils import sha256_json, utcnow
 
 
 # ---------------------------------------------------------------------------
@@ -203,8 +202,7 @@ class ComplianceEngine:
 
     def _compute_rules_hash(self) -> str:
         """Compute a deterministic hash of the rules YAML content."""
-        canonical = json.dumps(self._rules, sort_keys=True, default=str)
-        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        return sha256_json(self._rules)
 
 
 # ---------------------------------------------------------------------------
@@ -250,7 +248,7 @@ class AuditChain:
 
         entry: dict[str, Any] = {
             "index": len(self._chain),
-            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+            "timestamp": utcnow().isoformat(),
             "agent": agent_name,
             "input_hash": self._hash(input_data),
             "output_hash": self._hash(output_data),
@@ -261,15 +259,9 @@ class AuditChain:
         self._chain.append(entry)
         return entry["hash"]
 
-    # Legacy alias used by main.py
-    log_event = log
-
     def export(self) -> list[dict[str, Any]]:
         """Return a copy of the full chain for external inspection."""
         return list(self._chain)
-
-    # Legacy alias
-    get_full_chain = export
 
     def verify_integrity(self) -> bool:
         """
@@ -302,5 +294,4 @@ class AuditChain:
 
     @staticmethod
     def _hash(data: Any) -> str:
-        canonical = json.dumps(data, sort_keys=True, default=str)
-        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        return sha256_json(data)

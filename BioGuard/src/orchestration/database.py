@@ -328,6 +328,4 @@ class BioGuardianDB:
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _utcnow() -> str:
-    """Return the current UTC time as an ISO-8601 string."""
-    return datetime.now(tz=timezone.utc).isoformat()
+from orchestration.utils import utcnow_iso as _utcnow

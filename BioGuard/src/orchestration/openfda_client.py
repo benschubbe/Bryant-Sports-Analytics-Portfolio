@@ -23,7 +23,7 @@ Usage:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 import requests
 
@@ -31,7 +31,6 @@ logger = logging.getLogger("BioGuardian.OpenFDA")
 
 # openFDA public API base URL — no API key required for basic queries
 _BASE_URL = "https://api.fda.gov/drug/event.json"
-_LABEL_URL = "https://api.fda.gov/drug/label.json"
 _TIMEOUT = 8  # seconds
 
 
@@ -207,27 +206,6 @@ class OpenFDAClient:
             "severity": "LOW",
             "source": "cached",
         }
-
-    def query_drug_label(self, drug_name: str) -> Optional[str]:
-        """
-        Query openFDA drug label for contraindication/warning text.
-
-        Returns the first warnings section found, or None.
-        """
-        try:
-            params = {
-                "search": f'openfda.brand_name:"{drug_name}"',
-                "limit": 1,
-            }
-            resp = self._session.get(_LABEL_URL, params=params, timeout=self._timeout)
-            if resp.status_code == 200:
-                results = resp.json().get("results", [])
-                if results:
-                    warnings = results[0].get("warnings", [""])[0]
-                    return warnings[:500] if warnings else None
-        except requests.RequestException:
-            pass
-        return None
 
     def _query_total_count(self, drug_a: str, drug_b: str) -> int:
         """Get total FAERS report count for the drug pair."""

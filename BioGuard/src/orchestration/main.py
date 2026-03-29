@@ -25,11 +25,8 @@ every output path.  It cannot be prompted, jailbroken, or bypassed.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
-import math
-import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -58,6 +55,7 @@ from orchestration.models import (
 )
 from orchestration.mcp_server import MCPServer
 from orchestration.openfda_client import OpenFDAClient
+from orchestration.utils import sha256_json, utcnow
 from orchestration.vector_store import get_clinical_store
 
 # ---------------------------------------------------------------------------
@@ -169,8 +167,7 @@ _FALLBACK_SIGNALS: list[dict[str, Any]] = [
 # Agent implementations
 # ---------------------------------------------------------------------------
 
-def _utcnow() -> datetime:
-    return datetime.now(tz=timezone.utc)
+_utcnow = utcnow  # alias for backward compatibility within this module
 
 
 def scribe_agent(raw: dict[str, Any]) -> dict[str, Any]:
@@ -358,6 +355,7 @@ def correlation_agent(raw: dict[str, Any]) -> dict[str, Any]:
     substance = state.protocol.get("substance", "Atorvastatin")
     logger.info("[%s] Correlation Engine: computing Pearson r for biometric drift post-%s.", pid, substance)
 
+    glucose_result = None  # initialized before try so it's always in scope
     try:
         # Generate synthetic biometric data for Sarah's scenario and run REAL
         # Pearson correlation using NumPy (correlation_engine module).
@@ -448,12 +446,7 @@ def correlation_agent(raw: dict[str, Any]) -> dict[str, Any]:
 
     state.signals = signals
     primary = signals[0]
-    suppressed = 0
-    try:
-        if glucose_result and not glucose_result.significant:
-            suppressed = 1
-    except NameError:
-        pass
+    suppressed = 1 if (glucose_result and not glucose_result.significant) else 0
     state.append_log(
         agent="The Correlation Engine",
         message=(
@@ -503,7 +496,7 @@ def compliance_agent(raw: dict[str, Any]) -> dict[str, Any]:
 
     result: ValidationResult = _compliance.validate(corpus)
 
-    if not result:
+    if not result.passed:
         for violation in result.violations:
             logger.warning("[%s] Compliance violation: %s", pid, violation)
 
@@ -521,9 +514,7 @@ def compliance_agent(raw: dict[str, Any]) -> dict[str, Any]:
 
     # -- Seal the audit chain --
     chain = _audit.export()
-    audit_hash = hashlib.sha256(
-        json.dumps(chain, sort_keys=True, default=str).encode("utf-8")
-    ).hexdigest()
+    audit_hash = sha256_json(chain)
 
     integrity_ok = _audit.verify_integrity()
     if not integrity_ok:
@@ -667,19 +658,28 @@ def run_simulation() -> tuple[Any, int]:
     """
     body: dict[str, Any] = request.get_json(force=True) or {}
     pid: str = body.get("patient_id", "PT-2026-SARAH")
+    if not pid or not isinstance(pid, str) or len(pid) > 256:
+        return jsonify({"status": "error", "message": "Invalid patient_id."}), 400
+
     intervention: dict[str, Any] = body.get(
         "intervention", {"substance": "Atorvastatin", "dose": "20mg"}
     )
+    if not isinstance(intervention, dict):
+        return jsonify({"status": "error", "message": "intervention must be a JSON object."}), 400
 
     # Normalise frontend key variations
     if "drug" in intervention and "substance" not in intervention:
         intervention["substance"] = intervention.pop("drug")
 
-    initial: dict[str, Any] = AgentState(
-        patient_id=pid,
-        raw_lab_input="quest_lab_report_pdf",
-        protocol=intervention,
-    ).model_dump(mode="json")
+    try:
+        initial: dict[str, Any] = AgentState(
+            patient_id=pid,
+            raw_lab_input="quest_lab_report_pdf",
+            protocol=intervention,
+        ).model_dump(mode="json")
+    except (ValueError, TypeError) as exc:
+        logger.warning("[%s] Invalid request payload: %s", pid, exc)
+        return jsonify({"status": "error", "message": f"Invalid request: {exc}"}), 400
 
     try:
         final = _swarm.invoke(initial)
@@ -737,22 +737,30 @@ def get_history(patient_id: str) -> tuple[Any, int]:
 @app.route("/v1/health", methods=["GET"])
 def health_check() -> tuple[Any, int]:
     """Health check endpoint for service monitoring."""
-    return jsonify({
-        "status": "healthy",
-        "service": "BioGuardian Cerebellum",
-        "version": "2.4.0",
-        "compliance_engine": _compliance.version,
-        "rules_loaded": _compliance.rule_count,
-        "audit_chain_length": _audit.length,
-        "vector_store_size": _vector_store.size,
-        "mcp_tools": _mcp.schema_summary(),
-    }), 200
+    try:
+        return jsonify({
+            "status": "healthy",
+            "service": "BioGuardian Cerebellum",
+            "version": "2.4.0",
+            "compliance_engine": _compliance.version,
+            "rules_loaded": _compliance.rule_count,
+            "audit_chain_length": _audit.length,
+            "vector_store_size": _vector_store.size,
+            "mcp_tools": _mcp.schema_summary(),
+        }), 200
+    except Exception:
+        logger.exception("Health check failed.")
+        return jsonify({"status": "degraded"}), 503
 
 
 @app.route("/v1/mcp/tools", methods=["GET"])
 def list_mcp_tools() -> tuple[Any, int]:
     """MCP tools/list — return all registered tool schemas."""
-    return jsonify({"tools": _mcp.list_tools()}), 200
+    try:
+        return jsonify({"tools": _mcp.list_tools()}), 200
+    except Exception:
+        logger.exception("MCP tool listing failed.")
+        return jsonify({"status": "error", "message": "Tool listing failed."}), 500
 
 
 # ---------------------------------------------------------------------------

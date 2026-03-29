@@ -24,6 +24,8 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from orchestration.utils import utcnow
+
 
 # ---------------------------------------------------------------------------
 # Shared types / aliases
@@ -38,8 +40,7 @@ Severity = Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 LabStatus = Literal["registered", "partial", "preliminary", "final", "amended", "corrected", "cancelled"]
 
 
-def _utcnow() -> datetime:
-    return datetime.now(tz=timezone.utc)
+_utcnow = utcnow  # module-level alias for default_factory compatibility
 
 
 def _brief_id() -> str:

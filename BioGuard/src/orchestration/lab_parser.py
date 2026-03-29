@@ -264,15 +264,6 @@ def parse_lab_text(text: str, source_hash: Optional[str] = None) -> List[Dict[st
     return unique_panels
 
 
-def parse_quest_cbc(text: str) -> List[Dict[str, Any]]:
-    """
-    Parse a Quest Diagnostics CBC panel from OCR text.
-
-    Quest format typically uses tab-separated columns:
-        Test Name    Result    Units    Reference Range    Flag
-    """
-    return parse_lab_text(text)
-
 
 def generate_sarah_labs() -> List[Dict[str, Any]]:
     """
