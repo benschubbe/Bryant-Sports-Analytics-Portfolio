@@ -13,8 +13,8 @@ import moment from 'moment';
 
 interface AnomalySignal {
   metric: string;
-  delta_pct: float;
-  confidence: float;
+  delta_pct: number;
+  confidence: number;
   correlated_event: string;
   window_hours: number;
   severity: string;
