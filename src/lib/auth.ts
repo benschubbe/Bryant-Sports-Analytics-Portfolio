@@ -66,15 +66,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       },
     }),
-    GitHub({
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    }),
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
+    ...(process.env.GITHUB_ID
+      ? [GitHub({ clientId: process.env.GITHUB_ID, clientSecret: process.env.GITHUB_SECRET! })]
+      : []),
+    ...(process.env.GOOGLE_CLIENT_ID
+      ? [Google({ clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET! })]
+      : []),
   ],
+  secret: process.env.NEXTAUTH_SECRET ?? "dev-secret-change-in-production",
   session: {
     strategy: "jwt",
   },
