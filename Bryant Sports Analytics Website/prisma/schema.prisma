@@ -6,21 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
-// Note: SQLite does not support enums — use String fields with conventions:
-// Role: STUDENT | FACULTY | ALUMNI | RECRUITER | ADMIN
-// Visibility: PUBLIC | BRYANT_ONLY | PRIVATE
-// ReactionType: UPVOTE | INSIGHTFUL | FIRE | CLAP
-// ChannelType: SPORT | CLASS | CLUB | GENERAL
-// RoleType: ANALYST | DATA_ENGINEER | DATA_SCIENTIST | SCOUT | RESEARCHER | STRATEGIST | OTHER
-// ExperienceLevel: INTERN | ENTRY | MID
-// ApplicationStatus: INTERESTED | APPLIED | PHONE_SCREEN | INTERVIEW | OFFER | ACCEPTED | REJECTED
-// EventType: SPEAKER | MIXER | CAREER_FAIR | WORKSHOP | WATCH_PARTY | MEETING
-// MentorMatchStatus: PENDING | ACTIVE | COMPLETED
-// MentorCadence: MONTHLY | AD_HOC | ASYNC
 
 // ─── Models ──────────────────────────────────────────────────────────────────
 
