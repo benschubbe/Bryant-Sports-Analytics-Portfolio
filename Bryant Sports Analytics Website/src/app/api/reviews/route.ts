@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
@@ -14,8 +15,7 @@ export async function GET(req: NextRequest) {
     const reviewerId = searchParams.get("reviewerId");
     const authorId = searchParams.get("authorId");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
+    const where: Prisma.ReviewWhereInput = {};
     if (projectId) where.projectId = projectId;
     if (reviewerId) where.reviewerId = reviewerId;
     if (authorId) where.authorId = authorId;
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     console.error("Reviews GET error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -63,11 +63,10 @@ export async function POST(req: NextRequest) {
     if (!projectId || !feedback) {
       return NextResponse.json(
         { error: "projectId and feedback are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Look up the project to get its authorId
     const project = await prisma.project.findUnique({
       where: { id: projectId },
     });
@@ -75,14 +74,14 @@ export async function POST(req: NextRequest) {
     if (!project) {
       return NextResponse.json(
         { error: "Project not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     if (project.authorId === session.user.id) {
       return NextResponse.json(
         { error: "You cannot review your own project" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -113,7 +112,7 @@ export async function POST(req: NextRequest) {
     console.error("Reviews POST error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

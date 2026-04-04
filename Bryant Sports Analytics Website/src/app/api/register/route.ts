@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 // Accepted .edu domains — add more as needed
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
       data: {
         name: name.trim(),
         email: normalizedEmail,
-        passwordHash: password,
+        passwordHash: await bcrypt.hash(password, 12),
         classYear: classYear || null,
         concentration: concentration || null,
         role: "STUDENT",

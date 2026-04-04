@@ -1,7 +1,9 @@
 "use client";
 
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { getInitials } from "@/lib/utils";
 
 interface TopbarProps {
   pageTitle: string;
@@ -9,6 +11,9 @@ interface TopbarProps {
 
 export function Topbar({ pageTitle }: TopbarProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: session } = useSession();
+
+  const initials = getInitials(session?.user?.name || "U");
 
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-bryant-gray-200 bg-white px-6">
@@ -33,18 +38,26 @@ export function Topbar({ pageTitle }: TopbarProps) {
         <button
           type="button"
           className="relative rounded-lg p-2 text-bryant-gray-500 transition-colors hover:bg-bryant-gray-100"
+          aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
         </button>
 
-        {/* User avatar dropdown trigger */}
+        {/* Sign out */}
         <button
           type="button"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-bryant-gold/20 text-sm font-semibold text-bryant-gold transition-colors hover:bg-bryant-gold/30"
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="rounded-lg p-2 text-bryant-gray-500 transition-colors hover:bg-bryant-gray-100"
+          aria-label="Sign out"
         >
-          BS
+          <LogOut className="h-5 w-5" />
         </button>
+
+        {/* User avatar */}
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-bryant-gold/20 text-sm font-semibold text-bryant-gold">
+          {initials}
+        </div>
       </div>
     </header>
   );

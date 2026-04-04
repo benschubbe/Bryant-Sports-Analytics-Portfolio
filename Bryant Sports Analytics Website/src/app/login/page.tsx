@@ -33,7 +33,9 @@ function LoginForm() {
       if (result?.error) {
         setError("Invalid email or password. Please try again.");
       } else {
-        window.location.href = "/portfolio";
+        const params = new URLSearchParams(window.location.search);
+        const callbackUrl = params.get("callbackUrl") || "/dashboard";
+        window.location.href = callbackUrl;
       }
     } catch {
       setError("Something went wrong. Please try again.");
