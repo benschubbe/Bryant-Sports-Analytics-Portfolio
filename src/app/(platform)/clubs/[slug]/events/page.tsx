@@ -89,6 +89,16 @@ export default function ClubEventsPage() {
         setEvents((prev) => [event, ...prev]);
         resetForm();
         setShowForm(false);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          setError("Please sign in to create events.");
+        } else if (res.status === 403) {
+          setError("Only the club president or officers can create events.");
+          setShowForm(false);
+        } else {
+          setError(data.error || "Failed to create event.");
+        }
       }
     } catch {
       setError("Failed to save. Please try again.");
