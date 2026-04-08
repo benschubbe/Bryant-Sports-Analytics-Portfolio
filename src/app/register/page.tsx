@@ -145,7 +145,7 @@ export default function RegisterPage() {
             Account Created!
           </h1>
           <p className="text-white/60 mb-8">
-            Welcome to Bryant Sports Analytics Hub. Redirecting you to sign in...
+            Welcome to Folio. Redirecting you to sign in...
           </p>
           <Link href="/login?registered=true">
             <Button size="lg" className="w-full max-w-xs">
@@ -169,8 +169,7 @@ export default function RegisterPage() {
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 h-1.5 w-16 rounded-full bg-gradient-to-r from-bryant-gold to-bryant-gold-light" />
           <h1 className="text-2xl font-bold text-white">
-            Bryant Sports{" "}
-            <span className="text-bryant-gold">Analytics Hub</span>
+            Fol<span className="text-bryant-gold">io</span>
           </h1>
           <p className="mt-2 text-sm text-white/50">
             Create your account

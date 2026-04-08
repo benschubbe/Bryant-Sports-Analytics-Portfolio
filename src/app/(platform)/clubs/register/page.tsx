@@ -78,7 +78,7 @@ export default function ClubRegisterPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <Input
                 label="Club Name"
-                placeholder="e.g. Bryant Sports Analytics Club"
+                placeholder="e.g. Finance Club"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required

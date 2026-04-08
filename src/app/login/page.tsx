@@ -52,8 +52,7 @@ function LoginForm() {
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 h-1.5 w-16 rounded-full bg-gradient-to-r from-bryant-gold to-bryant-gold-light" />
         <h1 className="text-2xl font-bold text-white">
-          Bryant Sports{" "}
-          <span className="text-bryant-gold">Analytics Hub</span>
+          Fol<span className="text-bryant-gold">io</span>
         </h1>
         <p className="mt-2 text-sm text-white/50">
           Sign in to your account

@@ -99,7 +99,7 @@ export default function ClubsDirectoryPage() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-bryant-black">Bryant Club Hub</h1>
+            <h1 className="text-3xl font-bold text-bryant-black">Folio</h1>
             <p className="mt-1 text-bryant-gray-500">
               Discover and join clubs across campus
             </p>

@@ -9,9 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Bryant Sports Analytics Hub",
+  title: "Folio — Campus Club Platform",
   description:
-    "A comprehensive sports analytics platform built by the Bryant University Sports Analytics Club, featuring data-driven insights, visualizations, and research.",
+    "Folio is a campus club platform for Bryant University — manage portals, projects, events, and networking for every club on campus.",
 };
 
 export default function RootLayout({

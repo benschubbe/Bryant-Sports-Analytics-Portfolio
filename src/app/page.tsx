@@ -46,7 +46,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <div className="h-1 w-8 rounded-full bg-bryant-gold" />
             <span className="text-lg font-bold text-white">
-              Bryant <span className="text-bryant-gold">Club Hub</span>
+              Fol<span className="text-bryant-gold">io</span>
             </span>
           </div>
           <nav className="hidden items-center gap-8 md:flex">
@@ -83,7 +83,7 @@ export default function LandingPage() {
           <div className="mx-auto mb-8 h-1.5 w-24 rounded-full bg-gradient-to-r from-bryant-gold to-bryant-gold-light" />
 
           <h1 className="mx-auto max-w-4xl text-5xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl">
-            Bryant Club Hub{" "}
+            Folio{" "}
             <span className="bg-gradient-to-r from-bryant-gold to-bryant-gold-light bg-clip-text text-transparent">
               &mdash; One Platform for Every Club on Campus
             </span>
@@ -160,7 +160,7 @@ export default function LandingPage() {
             Ready to launch your club portal?
           </h2>
           <p className="mt-4 text-lg text-white/60">
-            Join the Bryant Club Hub and give your organization the platform it
+            Join Folio and give your organization the platform it
             deserves.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -184,7 +184,7 @@ export default function LandingPage() {
             <div>
               <div className="mb-3 h-1 w-8 rounded-full bg-bryant-gold" />
               <h3 className="text-lg font-bold text-white">
-                Bryant <span className="text-bryant-gold">Club Hub</span>
+                Fol<span className="text-bryant-gold">io</span>
               </h3>
               <p className="mt-2 text-sm text-white/40">
                 One platform for every club on campus.
@@ -252,7 +252,7 @@ export default function LandingPage() {
 
           <div className="mt-10 border-t border-white/10 pt-6">
             <p className="text-center text-xs text-white/30">
-              &copy; {new Date().getFullYear()} Bryant University Club Hub. All
+              &copy; {new Date().getFullYear()} Folio — Bryant University. All
               rights reserved.
             </p>
           </div>

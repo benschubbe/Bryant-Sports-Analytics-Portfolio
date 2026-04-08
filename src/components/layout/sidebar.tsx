@@ -100,9 +100,7 @@ export function Sidebar() {
         <Link href="/dashboard">
           <div className="mb-2 h-1 w-10 rounded-full bg-bryant-gold" />
           <h1 className="text-lg font-bold tracking-tight">
-            Bryant Sports
-            <br />
-            <span className="text-bryant-gold">Analytics Hub</span>
+            Fol<span className="text-bryant-gold">io</span>
           </h1>
         </Link>
       </div>

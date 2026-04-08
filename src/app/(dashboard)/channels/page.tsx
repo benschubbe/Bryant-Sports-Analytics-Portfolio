@@ -68,7 +68,7 @@ const MOCK_CHANNELS: Channel[] = [
     typeBadgeVariant: "tool",
     members: 97,
     description:
-      "Bryant Sports Analytics Club announcements, meeting notes, guest speaker info, and competition teams.",
+      "Club announcements, meeting notes, guest speaker info, and competition teams.",
     joined: true,
   },
   {
@@ -108,7 +108,7 @@ const MOCK_CHANNELS: Channel[] = [
     typeBadgeVariant: "domain",
     members: 312,
     description:
-      "General discussion for the Bryant Sports Analytics community. Introductions, news, and off-topic banter.",
+      "General discussion for the club community. Introductions, news, and off-topic banter.",
     joined: true,
   },
   {
