@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
-import { Layers, Plus, Github, ExternalLink } from "lucide-react";
+import { Layers, Plus, Code, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -170,7 +170,7 @@ export default function ClubProjectsPage() {
                   {project.author?.name && <span>by {project.author.name}</span>}
                   {project.githubUrl && (
                     <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-bryant-gold hover:underline">
-                      <Github className="h-3.5 w-3.5" />
+                      <Code className="h-3.5 w-3.5" />
                       GitHub
                     </a>
                   )}
