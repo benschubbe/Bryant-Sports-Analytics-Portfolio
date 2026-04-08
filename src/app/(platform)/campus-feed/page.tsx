@@ -16,18 +16,16 @@ import { DemoBox } from "@/components/club/demo-box";
 import { timeAgo } from "@/lib/utils";
 
 interface FeedItem {
-  id: string;
+  clubId: string;
+  clubName: string;
+  clubSlug: string;
+  clubDomain: string | null;
+  clubColor: string | null;
   type: "post" | "project" | "event" | "member_joined";
   title: string;
-  detail: string;
-  authorName: string;
+  detail: string | null;
+  author: { name: string; image: string | null } | null;
   createdAt: string;
-  club: {
-    name: string;
-    slug: string;
-    color: string | null;
-    domain: string | null;
-  };
 }
 
 interface Club {
@@ -41,9 +39,9 @@ interface Club {
 interface ClubReport {
   summary: string;
   stats: {
-    posts: number;
-    projects: number;
-    members: number;
+    newPosts: number;
+    newProjects: number;
+    newMembers: number;
   };
 }
 
@@ -170,13 +168,13 @@ export default function CampusFeedPage() {
                 icon={Activity}
               />
             ) : (
-              feedItems.map((item) => {
+              feedItems.map((item, idx) => {
                 const Icon = getActivityIcon(item.type);
-                const accentColor = item.club.color || "#C4972F";
+                const accentColor = item.clubColor || "#C4972F";
                 return (
                   <Link
-                    key={item.id}
-                    href={`/clubs/${item.club.slug}/dashboard`}
+                    key={`${item.clubId}-${item.type}-${idx}`}
+                    href={`/clubs/${item.clubSlug}/dashboard`}
                   >
                     <Card className="group cursor-pointer transition-all hover:shadow-lg hover:border-bryant-gold/40">
                       <CardContent className="py-5">
@@ -187,10 +185,10 @@ export default function CampusFeedPage() {
                             style={{ backgroundColor: accentColor }}
                           />
                           <span className="text-sm font-medium text-bryant-gray-700">
-                            {item.club.name}
+                            {item.clubName}
                           </span>
-                          {item.club.domain && (
-                            <Badge variant="domain">{item.club.domain}</Badge>
+                          {item.clubDomain && (
+                            <Badge variant="domain">{item.clubDomain}</Badge>
                           )}
                         </div>
 
@@ -211,8 +209,8 @@ export default function CampusFeedPage() {
 
                         {/* Author + timestamp */}
                         <div className="mt-3 ml-6 flex items-center gap-2 text-xs text-bryant-gray-400">
-                          <span>{item.authorName}</span>
-                          <span>&middot;</span>
+                          {item.author?.name && <span>{item.author.name}</span>}
+                          {item.author?.name && <span>&middot;</span>}
                           <span>{timeAgo(item.createdAt)}</span>
                         </div>
                       </CardContent>
@@ -270,9 +268,9 @@ export default function CampusFeedPage() {
                         {report.summary}
                       </p>
                       <div className="mt-3 text-xs text-bryant-gray-400">
-                        {report.stats.posts} posts &middot;{" "}
-                        {report.stats.projects} projects &middot;{" "}
-                        {report.stats.members} members
+                        {report.stats.newPosts} posts &middot;{" "}
+                        {report.stats.newProjects} projects &middot;{" "}
+                        {report.stats.newMembers} members
                       </div>
                       <Link
                         href={`/clubs/${club.slug}/dashboard`}

@@ -90,14 +90,18 @@ export default function ClubProjectsPage() {
     }
   }
 
-  function parseTools(tools: string | null | undefined): string[] {
+  function parseTools(tools: unknown): string[] {
     if (!tools) return [];
-    try {
-      const parsed = JSON.parse(tools);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
+    if (Array.isArray(tools)) return tools;
+    if (typeof tools === "string") {
+      try {
+        const parsed = JSON.parse(tools);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return tools.split(",").map((t) => t.trim()).filter(Boolean);
+      }
     }
+    return [];
   }
 
   if (fetchLoading) {
