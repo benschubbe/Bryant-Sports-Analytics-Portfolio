@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Trophy, Plus, Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,8 +27,26 @@ export default function ClubChallengesPage() {
   const [showForm, setShowForm] = useState(false);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch(`/api/clubs/${slug}/challenges`);
+        if (res.ok) {
+          const data = await res.json();
+          setChallenges(data);
+        }
+      } catch {
+        // Failed to load
+      } finally {
+        setFetchLoading(false);
+      }
+    }
+    loadData();
+  }, [slug]);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -94,6 +112,17 @@ export default function ClubChallengesPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (fetchLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-bryant-gray-900">Challenges</h1>
+        </div>
+        <div className="py-12 text-center text-bryant-gray-400">Loading...</div>
+      </div>
+    );
   }
 
   return (

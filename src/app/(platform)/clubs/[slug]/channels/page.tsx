@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Hash, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,7 +33,25 @@ export default function ClubChannelsPage() {
   const [showForm, setShowForm] = useState(false);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch(`/api/clubs/${slug}/channels`);
+        if (res.ok) {
+          const data = await res.json();
+          setChannels(data);
+        }
+      } catch {
+        // Failed to load
+      } finally {
+        setFetchLoading(false);
+      }
+    }
+    loadData();
+  }, [slug]);
   const [form, setForm] = useState({ name: "", description: "", type: "GENERAL" });
 
   function resetForm() {
@@ -71,6 +89,17 @@ export default function ClubChannelsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (fetchLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-bryant-gray-900">Channels</h1>
+        </div>
+        <div className="py-12 text-center text-bryant-gray-400">Loading...</div>
+      </div>
+    );
   }
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Send, MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,8 +21,26 @@ export default function ClubFeedPage() {
   const [composeText, setComposeText] = useState("");
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [showCompose, setShowCompose] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch(`/api/clubs/${slug}/posts`);
+        if (res.ok) {
+          const data = await res.json();
+          setPosts(data);
+        }
+      } catch {
+        // Failed to load
+      } finally {
+        setFetchLoading(false);
+      }
+    }
+    loadData();
+  }, [slug]);
 
   async function handleSubmit() {
     if (!composeText.trim()) return;
@@ -45,6 +63,17 @@ export default function ClubFeedPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (fetchLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-bryant-gray-900">Feed</h1>
+        </div>
+        <div className="py-12 text-center text-bryant-gray-400">Loading...</div>
+      </div>
+    );
   }
 
   return (

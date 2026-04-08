@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Layers, Plus, Code, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,7 +30,25 @@ export default function ClubProjectsPage() {
   const [showForm, setShowForm] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch(`/api/clubs/${slug}/projects`);
+        if (res.ok) {
+          const data = await res.json();
+          setProjects(data);
+        }
+      } catch {
+        // Failed to load
+      } finally {
+        setFetchLoading(false);
+      }
+    }
+    loadData();
+  }, [slug]);
   const [form, setForm] = useState({
     title: "",
     abstract: "",
@@ -80,6 +98,17 @@ export default function ClubProjectsPage() {
     } catch {
       return [];
     }
+  }
+
+  if (fetchLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-bryant-gray-900">Projects</h1>
+        </div>
+        <div className="py-12 text-center text-bryant-gray-400">Loading...</div>
+      </div>
+    );
   }
 
   return (

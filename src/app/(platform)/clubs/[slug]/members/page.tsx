@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Users, UserPlus, Mail } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,7 +29,25 @@ export default function ClubMembersPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [form, setForm] = useState({ email: "", role: "MEMBER" });
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch(`/api/clubs/${slug}/members`);
+        if (res.ok) {
+          const data = await res.json();
+          setMembers(data);
+        }
+      } catch {
+        // Failed to load
+      } finally {
+        setFetchLoading(false);
+      }
+    }
+    loadData();
+  }, [slug]);
 
   function resetForm() {
     setForm({ email: "", role: "MEMBER" });
@@ -46,6 +64,17 @@ export default function ClubMembersPage() {
     setMembers((prev) => [member, ...prev]);
     resetForm();
     setShowForm(false);
+  }
+
+  if (fetchLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-bryant-gray-900">Members</h1>
+        </div>
+        <div className="py-12 text-center text-bryant-gray-400">Loading...</div>
+      </div>
+    );
   }
 
   return (
