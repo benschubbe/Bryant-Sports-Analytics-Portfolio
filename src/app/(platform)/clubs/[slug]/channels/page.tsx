@@ -39,7 +39,7 @@ export default function ClubChannelsPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch(`/api/clubs/${slug}/channels`);
+        const res = await fetch(`/api/clubs/${slug}/channels`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setChannels(data);

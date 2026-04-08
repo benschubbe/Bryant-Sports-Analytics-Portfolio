@@ -72,45 +72,54 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-bryant-black to-bryant-gray-900 pt-16">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute left-1/4 top-1/4 h-96 w-96 rounded-full bg-bryant-gold blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-bryant-gold-light blur-3xl" />
-        </div>
+      <section className="relative min-h-screen overflow-hidden pt-16">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 animate-gradient bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] bg-[length:400%_400%]" />
+        {/* Overlay pattern */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
 
-        <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-32 text-center">
-          {/* Gold accent bar */}
-          <div className="mx-auto mb-8 h-1.5 w-24 rounded-full bg-gradient-to-r from-bryant-gold to-bryant-gold-light" />
+        {/* Floating decorative blobs */}
+        <div className="absolute left-[10%] top-[20%] h-72 w-72 animate-blob rounded-full bg-bryant-gold/20 blur-3xl" />
+        <div className="absolute right-[15%] top-[30%] h-96 w-96 animate-blob animation-delay-2000 rounded-full bg-[#6b2737]/20 blur-3xl" />
+        <div className="absolute bottom-[20%] left-[30%] h-80 w-80 animate-blob animation-delay-4000 rounded-full bg-[#1b4332]/20 blur-3xl" />
+        <div className="absolute bottom-[30%] right-[10%] h-64 w-64 animate-blob animation-delay-6000 rounded-full bg-[#b5985a]/15 blur-3xl" />
 
-          <h1 className="mx-auto max-w-4xl text-5xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl">
-            Folio{" "}
-            <span className="bg-gradient-to-r from-bryant-gold to-bryant-gold-light bg-clip-text text-transparent">
-              &mdash; One Platform for Every Club on Campus
-            </span>
-          </h1>
+        {/* Content */}
+        <div className="relative z-10">
+          <div className="mx-auto max-w-7xl px-6 pb-24 pt-32 text-center">
+            {/* Gold accent bar */}
+            <div className="mx-auto mb-8 h-1.5 w-24 rounded-full bg-gradient-to-r from-bryant-gold to-bryant-gold-light" />
 
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-white/60 sm:text-xl">
-            Create a portal for your club in minutes. Projects, events,
-            networking, and more.
-          </p>
+            <h1 className="mx-auto max-w-4xl text-5xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl">
+              Folio{" "}
+              <span className="bg-gradient-to-r from-bryant-gold to-bryant-gold-light bg-clip-text text-transparent">
+                &mdash; One Platform for Every Club on Campus
+              </span>
+            </h1>
 
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/clubs">
-              <Button size="lg" className="min-w-[160px]">
-                <Rocket className="h-5 w-5" />
-                Explore Clubs
-              </Button>
-            </Link>
-            <Link href="/clubs/register">
-              <Button variant="outline" size="lg" className="min-w-[160px] border-white/20 text-white hover:bg-white/10">
-                Register Your Club
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-            </Link>
+            <p className="mx-auto mt-6 max-w-2xl text-lg text-white/60 sm:text-xl">
+              Create a portal for your club in minutes. Projects, events,
+              networking, and more.
+            </p>
+
+            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link href="/clubs">
+                <Button size="lg" className="min-w-[160px]">
+                  <Rocket className="h-5 w-5" />
+                  Explore Clubs
+                </Button>
+              </Link>
+              <Link href="/clubs/register">
+                <Button variant="outline" size="lg" className="min-w-[160px] border-white/20 text-white hover:bg-white/10">
+                  Register Your Club
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Decorative gold accent line */}
+            <div className="mx-auto mt-20 h-px w-full max-w-lg bg-gradient-to-r from-transparent via-bryant-gold/50 to-transparent" />
           </div>
-
-          {/* Decorative gold accent line */}
-          <div className="mx-auto mt-20 h-px w-full max-w-lg bg-gradient-to-r from-transparent via-bryant-gold/50 to-transparent" />
         </div>
       </section>
 

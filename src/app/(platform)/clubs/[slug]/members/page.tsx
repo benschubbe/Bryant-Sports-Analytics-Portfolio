@@ -35,7 +35,7 @@ export default function ClubMembersPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch(`/api/clubs/${slug}/members`);
+        const res = await fetch(`/api/clubs/${slug}/members`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setMembers(data);

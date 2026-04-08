@@ -43,7 +43,7 @@ export default function ClubEventsPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch(`/api/clubs/${slug}/events`);
+        const res = await fetch(`/api/clubs/${slug}/events`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setEvents(data);

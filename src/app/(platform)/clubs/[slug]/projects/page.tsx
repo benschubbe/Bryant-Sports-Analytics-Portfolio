@@ -36,7 +36,7 @@ export default function ClubProjectsPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch(`/api/clubs/${slug}/projects`);
+        const res = await fetch(`/api/clubs/${slug}/projects`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setProjects(data);

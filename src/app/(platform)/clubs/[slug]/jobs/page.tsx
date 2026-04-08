@@ -53,7 +53,7 @@ export default function ClubJobsPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch(`/api/clubs/${slug}/jobs`);
+        const res = await fetch(`/api/clubs/${slug}/jobs`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setJobs(data);

@@ -22,6 +22,7 @@ import {
   Briefcase,
   Rss,
   User,
+  ArrowLeft,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -96,6 +97,10 @@ export default function ClubsDirectoryPage() {
   return (
     <div className="min-h-screen bg-bryant-gray-50">
       <div className="mx-auto max-w-6xl px-6 py-12">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm text-bryant-gray-500 hover:text-bryant-black transition-colors mb-6">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Link>
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>

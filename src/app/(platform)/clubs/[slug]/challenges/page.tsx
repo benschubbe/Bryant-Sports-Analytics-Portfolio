@@ -34,7 +34,7 @@ export default function ClubChallengesPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch(`/api/clubs/${slug}/challenges`);
+        const res = await fetch(`/api/clubs/${slug}/challenges`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setChallenges(data);
