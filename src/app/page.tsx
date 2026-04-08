@@ -78,17 +78,24 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative min-h-screen overflow-hidden pt-16">
-        {/* Background image */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/hero-bg.jpg"
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/55" />
-        {/* Gold gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/70" />
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 animate-gradient bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] bg-[length:400%_400%]" />
+        {/* Campus image strip */}
+        <div className="absolute top-16 left-0 right-0 h-48 overflow-hidden opacity-30">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/hero-bg.jpg"
+            alt=""
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a2e] via-transparent to-[#1a1a2e]" />
+        </div>
+        {/* Floating decorative blobs */}
+        <div className="absolute left-[10%] top-[20%] h-72 w-72 animate-blob rounded-full bg-bryant-gold/15 blur-3xl" />
+        <div className="absolute right-[15%] top-[40%] h-96 w-96 animate-blob animation-delay-2000 rounded-full bg-[#6b2737]/15 blur-3xl" />
+        <div className="absolute bottom-[20%] left-[30%] h-80 w-80 animate-blob animation-delay-4000 rounded-full bg-[#1b4332]/15 blur-3xl" />
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#1a1a2e]/90" />
 
         {/* Content */}
         <div className="relative z-10">
