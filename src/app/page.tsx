@@ -8,6 +8,10 @@ import {
   Hammer,
   Search,
   Eye,
+  Building2,
+  Briefcase,
+  Layers,
+  Calendar,
 } from "lucide-react";
 
 const steps = [
@@ -74,6 +78,12 @@ export default function LandingPage() {
           </div>
           <nav className="hidden items-center gap-8 md:flex">
             <Link
+              href="/clubs"
+              className="text-sm font-medium text-white transition-colors hover:text-bryant-gold"
+            >
+              Explore Clubs
+            </Link>
+            <Link
               href="/showcase"
               className="text-sm font-medium text-white transition-colors hover:text-bryant-gold"
             >
@@ -126,9 +136,9 @@ export default function LandingPage() {
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href="/showcase">
+              <Link href="/clubs">
                 <Button size="lg" className="min-w-[200px]">
-                  See Student Work
+                  Explore Clubs
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
@@ -138,7 +148,7 @@ export default function LandingPage() {
                   size="lg"
                   className="min-w-[200px] border-white/20 text-white hover:bg-white/10"
                 >
-                  Create Your Profile
+                  Create Your Account
                 </Button>
               </Link>
             </div>
@@ -246,6 +256,70 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Student CTA */}
+      <section className="bg-white px-6 py-24">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-12 lg:grid-cols-2 items-center">
+            <div>
+              <h2 className="text-3xl font-bold text-bryant-gray-900 sm:text-4xl">
+                Your club. Your portfolio.{" "}
+                <span className="text-bryant-gold">Your career.</span>
+              </h2>
+              <p className="mt-4 text-lg text-bryant-gray-500 leading-relaxed">
+                Join clubs that match your interests, build real projects with your peers,
+                track your growth with an impact score, and let employers discover your work.
+                Folio turns your extracurriculars into career opportunities.
+              </p>
+              <div className="mt-8 space-y-4">
+                {[
+                  "Join any club on campus and collaborate on real projects",
+                  "Build a portfolio that goes beyond your resume",
+                  "Track job applications and get AI-powered project recommendations",
+                  "Event summaries and engagement scores show your involvement",
+                  "Public profiles let employers find you by the skills you've actually used",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <div className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-bryant-gold/20 flex items-center justify-center">
+                      <div className="h-2 w-2 rounded-full bg-bryant-gold" />
+                    </div>
+                    <p className="text-sm text-bryant-gray-600">{item}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-8 flex gap-4">
+                <Link href="/clubs">
+                  <Button size="lg">
+                    <Building2 className="h-4 w-4" />
+                    Browse Clubs
+                  </Button>
+                </Link>
+                <Link href="/my">
+                  <Button variant="outline" size="lg">
+                    My Dashboard
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: "Club Portals", desc: "Dashboard, feed, events, projects", icon: Building2 },
+                { label: "Job Tracker", desc: "LinkedIn, Indeed, Handshake links", icon: Briefcase },
+                { label: "AI Recommendations", desc: "Project ideas tailored to your club", icon: Layers },
+                { label: "Weekly Reports", desc: "PDF summaries of campus activity", icon: Calendar },
+              ].map((feat) => (
+                <Card key={feat.label} className="text-center">
+                  <CardContent className="py-6">
+                    <feat.icon className="mx-auto mb-3 h-8 w-8 text-bryant-gold" />
+                    <h3 className="text-sm font-bold text-bryant-gray-900">{feat.label}</h3>
+                    <p className="mt-1 text-xs text-bryant-gray-500">{feat.desc}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Employer CTA */}
       <section className="bg-gradient-to-b from-bryant-black to-bryant-gray-900 px-6 py-24">
         <div className="mx-auto max-w-3xl text-center">
@@ -284,33 +358,23 @@ export default function LandingPage() {
 
             <div>
               <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white/40">
-                Quick Links
+                For Students
               </h4>
               <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="/showcase"
-                    className="text-sm text-white/60 transition-colors hover:text-white"
-                  >
-                    Showcase
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/employers"
-                    className="text-sm text-white/60 transition-colors hover:text-white"
-                  >
-                    For Employers
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/clubs"
-                    className="text-sm text-white/60 transition-colors hover:text-white"
-                  >
-                    Explore Clubs
-                  </Link>
-                </li>
+                <li><Link href="/clubs" className="text-sm text-white/60 transition-colors hover:text-white">Explore Clubs</Link></li>
+                <li><Link href="/my" className="text-sm text-white/60 transition-colors hover:text-white">My Dashboard</Link></li>
+                <li><Link href="/my/applications" className="text-sm text-white/60 transition-colors hover:text-white">Job Tracker</Link></li>
+                <li><Link href="/campus-feed" className="text-sm text-white/60 transition-colors hover:text-white">Weekly Report</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white/40">
+                For Employers
+              </h4>
+              <ul className="space-y-2">
+                <li><Link href="/showcase" className="text-sm text-white/60 transition-colors hover:text-white">Student Showcase</Link></li>
+                <li><Link href="/employers" className="text-sm text-white/60 transition-colors hover:text-white">Search Candidates</Link></li>
               </ul>
             </div>
 
