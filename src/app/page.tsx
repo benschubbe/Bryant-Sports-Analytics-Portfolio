@@ -45,8 +45,9 @@ export default function LandingPage() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-4">
             {/* Bryant University Logo */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://upload.wikimedia.org/wikipedia/en/thumb/e/e1/Bryant_University_seal.svg/1200px-Bryant_University_seal.svg.png"
+              src="/bryant-logo.png"
               alt="Bryant University"
               className="h-9 w-9 rounded-full object-contain bg-white p-0.5"
             />
