@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Users, UserPlus, Crown, Shield } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Users, Crown, Shield, Star, Wallet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DemoBox } from "@/components/club/demo-box";
 import { getInitials } from "@/lib/utils";
@@ -21,12 +21,40 @@ interface Member {
   };
 }
 
+const ROLE_ORDER = ["PRESIDENT", "VP", "TREASURER", "OFFICER", "MEMBER"];
+
+const ROLE_CONFIG: Record<string, {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  variant: "success" | "warning" | "error" | "domain" | "sport";
+}> = {
+  PRESIDENT: { label: "President", icon: Crown, variant: "success" },
+  VP: { label: "Vice President", icon: Star, variant: "warning" },
+  TREASURER: { label: "Treasurer", icon: Wallet, variant: "domain" },
+  OFFICER: { label: "Officer", icon: Shield, variant: "warning" },
+  MEMBER: { label: "Member", icon: Users, variant: "sport" },
+};
+
+const ASSIGNABLE_ROLES = [
+  { value: "MEMBER", label: "Member" },
+  { value: "OFFICER", label: "Officer" },
+  { value: "VP", label: "Vice President" },
+  { value: "TREASURER", label: "Treasurer" },
+];
+
 export default function ClubMembersPage() {
   const params = useParams();
   const slug = params.slug as string;
+  const { data: session } = useSession();
 
   const [members, setMembers] = useState<Member[]>([]);
   const [fetchLoading, setFetchLoading] = useState(true);
+  const [updating, setUpdating] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  const isPresident = members.some(
+    (m) => m.user.id === session?.user?.id && m.role === "PRESIDENT",
+  );
 
   useEffect(() => {
     async function loadData() {
@@ -45,42 +73,52 @@ export default function ClubMembersPage() {
     loadData();
   }, [slug]);
 
-  if (fetchLoading) {
+  async function handleRoleChange(memberId: string, newRole: string) {
+    setUpdating(memberId);
+    setError("");
+    try {
+      const res = await fetch(`/api/clubs/${slug}/members/${memberId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setMembers((prev) =>
+          prev.map((m) => (m.id === memberId ? { ...m, role: updated.role } : m)),
+        );
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Failed to update role.");
+      }
+    } catch {
+      setError("Failed to update role. Please try again.");
+    } finally {
+      setUpdating(null);
+    }
+  }
+
+  // Sort members by role hierarchy
+  const sorted = [...members].sort(
+    (a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role),
+  );
+
+  const leadership = sorted.filter((m) => ["PRESIDENT", "VP", "TREASURER", "OFFICER"].includes(m.role));
+  const regularMembers = sorted.filter((m) => m.role === "MEMBER");
+
+  function RoleBadge({ role }: { role: string }) {
+    const config = ROLE_CONFIG[role] || ROLE_CONFIG.MEMBER;
+    const Icon = config.icon;
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-bryant-gray-900">Members</h1>
-        </div>
-        <div className="py-12 text-center text-bryant-gray-400">Loading...</div>
-      </div>
+      <Badge variant={config.variant}>
+        <Icon className="h-3 w-3 mr-1" />
+        {config.label}
+      </Badge>
     );
   }
 
-  const presidents = members.filter((m) => m.role === "PRESIDENT");
-  const officers = members.filter((m) => m.role === "OFFICER");
-  const regularMembers = members.filter((m) => m.role === "MEMBER");
-
-  function roleBadge(role: string) {
-    if (role === "PRESIDENT") {
-      return (
-        <Badge variant="success">
-          <Crown className="h-3 w-3 mr-1" />
-          President
-        </Badge>
-      );
-    }
-    if (role === "OFFICER") {
-      return (
-        <Badge variant="warning">
-          <Shield className="h-3 w-3 mr-1" />
-          Officer
-        </Badge>
-      );
-    }
-    return <Badge variant="sport">Member</Badge>;
-  }
-
   function MemberCard({ member }: { member: Member }) {
+    const isMe = member.user.id === session?.user?.id;
     return (
       <Card>
         <CardContent className="py-4">
@@ -100,9 +138,9 @@ export default function ClubMembersPage() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium text-bryant-gray-900 truncate">
-                  {member.user.name}
+                  {member.user.name}{isMe ? " (you)" : ""}
                 </p>
-                {roleBadge(member.role)}
+                <RoleBadge role={member.role} />
               </div>
               {member.user.headline && (
                 <p className="text-xs text-bryant-gray-500 truncate mt-0.5">
@@ -113,9 +151,36 @@ export default function ClubMembersPage() {
                 Joined {new Date(member.joinedAt).toLocaleDateString()}
               </p>
             </div>
+
+            {/* Role assignment dropdown — only for president, not on self */}
+            {isPresident && !isMe && member.role !== "PRESIDENT" && (
+              <select
+                value={member.role}
+                onChange={(e) => handleRoleChange(member.id, e.target.value)}
+                disabled={updating === member.id}
+                className="rounded-lg border border-bryant-gray-200 bg-white px-2 py-1 text-xs text-bryant-gray-700 focus:border-bryant-gold focus:outline-none focus:ring-1 focus:ring-bryant-gold"
+              >
+                {ASSIGNABLE_ROLES.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (fetchLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-bryant-gray-900">Members</h1>
+        </div>
+        <div className="py-12 text-center text-bryant-gray-400">Loading...</div>
+      </div>
     );
   }
 
@@ -131,19 +196,30 @@ export default function ClubMembersPage() {
         </div>
       </div>
 
+      {/* Error */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* President hint */}
+      {isPresident && (
+        <div className="rounded-lg border border-bryant-gold/30 bg-bryant-gold/5 px-4 py-3 text-sm text-bryant-gray-700">
+          As president, you can assign roles using the dropdown on each member card.
+        </div>
+      )}
+
       {members.length > 0 ? (
         <div className="space-y-6">
-          {/* Presidents */}
-          {presidents.length > 0 && (
+          {/* Leadership */}
+          {leadership.length > 0 && (
             <div>
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-bryant-gray-400">
                 Leadership
               </h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {presidents.map((m) => (
-                  <MemberCard key={m.id} member={m} />
-                ))}
-                {officers.map((m) => (
+                {leadership.map((m) => (
                   <MemberCard key={m.id} member={m} />
                 ))}
               </div>
