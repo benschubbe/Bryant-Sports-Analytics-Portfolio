@@ -2,49 +2,21 @@
 
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
-import { Star, Plus } from "lucide-react";
+import { MessageCircle, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { DemoBox } from "@/components/club/demo-box";
+import { getInitials } from "@/lib/utils";
 
 interface Review {
   id: string;
-  projectId: string;
-  methodologyScore: number;
-  visualizationScore: number;
-  writingScore: number;
-  codeQualityScore: number;
-  rigorScore: number;
+  title: string;
   feedback: string;
+  authorName: string;
   createdAt: string;
-}
-
-function ScoreInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-  return (
-    <div className="flex items-center justify-between">
-      <label className="text-sm text-bryant-gray-700">{label}</label>
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => onChange(n)}
-            className={`h-8 w-8 rounded text-sm font-medium transition-colors ${
-              n <= value
-                ? "bg-bryant-gold text-white"
-                : "bg-bryant-gray-100 text-bryant-gray-500 hover:bg-bryant-gray-200"
-            }`}
-          >
-            {n}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 export default function ClubReviewsPage() {
@@ -53,45 +25,23 @@ export default function ClubReviewsPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [form, setForm] = useState({
-    projectId: "",
-    methodologyScore: 3,
-    visualizationScore: 3,
-    writingScore: 3,
-    codeQualityScore: 3,
-    rigorScore: 3,
-    feedback: "",
-  });
-
-  function resetForm() {
-    setForm({
-      projectId: "",
-      methodologyScore: 3,
-      visualizationScore: 3,
-      writingScore: 3,
-      codeQualityScore: 3,
-      rigorScore: 3,
-      feedback: "",
-    });
-  }
+  const [title, setTitle] = useState("");
+  const [feedback, setFeedback] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.projectId || !form.feedback) return;
+    if (!feedback.trim()) return;
     const review: Review = {
       id: crypto.randomUUID(),
-      ...form,
+      title: title.trim() || "General Feedback",
+      feedback: feedback.trim(),
+      authorName: "You",
       createdAt: new Date().toISOString(),
     };
     setReviews((prev) => [review, ...prev]);
-    resetForm();
+    setTitle("");
+    setFeedback("");
     setShowForm(false);
-  }
-
-  function avgScore(r: Review): string {
-    return (
-      (r.methodologyScore + r.visualizationScore + r.writingScore + r.codeQualityScore + r.rigorScore) / 5
-    ).toFixed(1);
   }
 
   return (
@@ -99,49 +49,40 @@ export default function ClubReviewsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-bryant-gray-900">Peer Reviews</h1>
+          <h1 className="text-2xl font-bold text-bryant-gray-900">Reviews & Feedback</h1>
           <p className="text-sm text-bryant-gray-500">
-            Give and receive feedback on projects and work within your club.
+            Share feedback on projects, events, or club activities.
           </p>
         </div>
         <Button variant="primary" onClick={() => setShowForm(true)}>
           <Plus className="h-4 w-4" />
-          Write Review
+          Write Feedback
         </Button>
       </div>
 
       {/* Modal Form */}
-      <Modal open={showForm} onClose={() => { setShowForm(false); resetForm(); }} title="Write Review">
-        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto">
+      <Modal open={showForm} onClose={() => { setShowForm(false); setTitle(""); setFeedback(""); }} title="Write Feedback">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Project ID"
-            required
-            value={form.projectId}
-            onChange={(e) => setForm({ ...form, projectId: e.target.value })}
-            placeholder="Enter project ID"
+            label="Subject (optional)"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Feedback on NBA Draft Project"
           />
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-bryant-gray-700">Scores (1-5)</p>
-            <ScoreInput label="Methodology" value={form.methodologyScore} onChange={(v) => setForm({ ...form, methodologyScore: v })} />
-            <ScoreInput label="Visualization" value={form.visualizationScore} onChange={(v) => setForm({ ...form, visualizationScore: v })} />
-            <ScoreInput label="Writing" value={form.writingScore} onChange={(v) => setForm({ ...form, writingScore: v })} />
-            <ScoreInput label="Code Quality" value={form.codeQualityScore} onChange={(v) => setForm({ ...form, codeQualityScore: v })} />
-            <ScoreInput label="Rigor" value={form.rigorScore} onChange={(v) => setForm({ ...form, rigorScore: v })} />
-          </div>
           <Textarea
-            label="Feedback"
+            label="Your Feedback"
             required
-            value={form.feedback}
-            onChange={(e) => setForm({ ...form, feedback: e.target.value })}
-            placeholder="Provide detailed feedback..."
-            rows={4}
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            placeholder="Share your thoughts, suggestions, or constructive feedback..."
+            rows={6}
           />
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" type="button" onClick={() => { setShowForm(false); resetForm(); }}>
+            <Button variant="outline" type="button" onClick={() => { setShowForm(false); setTitle(""); setFeedback(""); }}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit">
-              Submit Review
+            <Button variant="primary" type="submit" disabled={!feedback.trim()}>
+              Submit Feedback
             </Button>
           </div>
         </form>
@@ -152,34 +93,33 @@ export default function ClubReviewsPage() {
         <div className="space-y-4">
           {reviews.map((review) => (
             <Card key={review.id}>
-              <CardContent>
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="text-sm font-medium text-bryant-gray-900">Project: {review.projectId}</p>
-                    <p className="text-xs text-bryant-gray-500">{new Date(review.createdAt).toLocaleDateString()}</p>
+              <CardContent className="py-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bryant-gray-200 text-xs font-semibold text-bryant-gray-600">
+                    {getInitials(review.authorName)}
                   </div>
-                  <Badge variant="domain">
-                    <Star className="h-3 w-3 mr-1" />
-                    {avgScore(review)} avg
-                  </Badge>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-bryant-gray-900">{review.authorName}</span>
+                      <span className="text-xs text-bryant-gray-400">
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {review.title !== "General Feedback" && (
+                      <p className="mt-0.5 text-sm font-medium text-bryant-gray-700">{review.title}</p>
+                    )}
+                    <p className="mt-2 text-sm text-bryant-gray-600 whitespace-pre-wrap">{review.feedback}</p>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  <Badge variant="default">Method: {review.methodologyScore}</Badge>
-                  <Badge variant="default">Viz: {review.visualizationScore}</Badge>
-                  <Badge variant="default">Writing: {review.writingScore}</Badge>
-                  <Badge variant="default">Code: {review.codeQualityScore}</Badge>
-                  <Badge variant="default">Rigor: {review.rigorScore}</Badge>
-                </div>
-                <p className="text-sm text-bryant-gray-600">{review.feedback}</p>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : (
         <DemoBox
-          title="No reviews yet"
-          description="Peer review requests and completed reviews will be listed here."
-          icon={Star}
+          title="No feedback yet"
+          description="Share your thoughts on club projects, events, or activities. Open feedback helps everyone improve."
+          icon={MessageCircle}
         />
       )}
     </div>
