@@ -1,44 +1,129 @@
 "use client";
 
 import React, { useState } from "react";
+import { useParams } from "next/navigation";
 import { Send, MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DemoBox } from "@/components/club/demo-box";
 
+interface Post {
+  id: string;
+  content: string;
+  author?: { name?: string | null };
+  createdAt: string;
+}
+
 export default function ClubFeedPage() {
+  const params = useParams();
+  const slug = params.slug as string;
+
   const [composeText, setComposeText] = useState("");
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showCompose, setShowCompose] = useState(false);
+
+  async function handleSubmit() {
+    if (!composeText.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/clubs/${slug}/posts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: composeText }),
+      });
+      if (res.ok) {
+        const post = await res.json();
+        setPosts((prev) => [post, ...prev]);
+        setComposeText("");
+        setShowCompose(false);
+      }
+    } catch {
+      // fail gracefully
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Header */}
-      <h1 className="text-2xl font-bold text-bryant-gray-900">Feed</h1>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-bryant-gray-900">Feed</h1>
+          <p className="text-sm text-bryant-gray-500">
+            Share updates, insights, and discussions with your club.
+          </p>
+        </div>
+        <Button variant="primary" onClick={() => setShowCompose(!showCompose)}>
+          <Send className="h-4 w-4" />
+          New Post
+        </Button>
+      </div>
 
       {/* Compose Box */}
-      <Card>
-        <CardContent className="space-y-3">
-          <textarea
-            value={composeText}
-            onChange={(e) => setComposeText(e.target.value)}
-            placeholder="Share an update with your club..."
-            rows={3}
-            className="block w-full rounded-lg border border-bryant-gray-300 px-3 py-2 text-sm text-bryant-gray-900 placeholder:text-bryant-gray-400 focus:border-bryant-gold focus:outline-none focus:ring-2 focus:ring-bryant-gold focus:ring-offset-0 transition-colors resize-none"
-          />
-          <div className="flex justify-end">
-            <Button variant="primary" size="sm" disabled={!composeText.trim()}>
-              <Send className="h-3.5 w-3.5" />
-              Post
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {showCompose && (
+        <Card>
+          <CardContent className="space-y-3">
+            <textarea
+              value={composeText}
+              onChange={(e) => setComposeText(e.target.value)}
+              placeholder="Share an update with your club..."
+              rows={3}
+              className="block w-full rounded-lg border border-bryant-gray-300 px-3 py-2 text-sm text-bryant-gray-900 placeholder:text-bryant-gray-400 focus:border-bryant-gold focus:outline-none focus:ring-2 focus:ring-bryant-gold focus:ring-offset-0 transition-colors resize-none"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setShowCompose(false); setComposeText(""); }}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={!composeText.trim()}
+                loading={loading}
+                onClick={handleSubmit}
+              >
+                <Send className="h-3.5 w-3.5" />
+                Post
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Feed placeholder */}
-      <DemoBox
-        title="No posts yet"
-        description="Posts from club members will appear here. Share updates, insights, and discussions."
-        icon={MessageSquare}
-      />
+      {/* Posts list */}
+      {posts.length > 0 ? (
+        <div className="space-y-4">
+          {posts.map((post) => (
+            <Card key={post.id}>
+              <CardContent>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-8 w-8 rounded-full bg-bryant-gray-200 flex items-center justify-center">
+                    <MessageSquare className="h-4 w-4 text-bryant-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-bryant-gray-900">
+                      {post.author?.name || "You"}
+                    </p>
+                    <p className="text-xs text-bryant-gray-500">
+                      {new Date(post.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm text-bryant-gray-700 whitespace-pre-wrap">
+                  {post.content}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <DemoBox
+          title="No posts yet"
+          description="Posts from club members will appear here. Share updates, insights, and discussions."
+          icon={MessageSquare}
+        />
+      )}
     </div>
   );
 }

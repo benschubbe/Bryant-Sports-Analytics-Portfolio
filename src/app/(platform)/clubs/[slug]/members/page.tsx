@@ -1,38 +1,131 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Users } from "lucide-react";
+import { useParams } from "next/navigation";
+import { Users, UserPlus, Mail } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Modal } from "@/components/ui/modal";
 import { DemoBox } from "@/components/club/demo-box";
 
+interface Member {
+  id: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
+
+const roleOptions = [
+  { value: "MEMBER", label: "Member" },
+  { value: "OFFICER", label: "Officer" },
+];
+
 export default function ClubMembersPage() {
-  const [search, setSearch] = useState("");
+  const params = useParams();
+  const slug = params.slug as string;
+
+  const [showForm, setShowForm] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [form, setForm] = useState({ email: "", role: "MEMBER" });
+
+  function resetForm() {
+    setForm({ email: "", role: "MEMBER" });
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.email) return;
+    const member: Member = {
+      id: crypto.randomUUID(),
+      ...form,
+      createdAt: new Date().toISOString(),
+    };
+    setMembers((prev) => [member, ...prev]);
+    resetForm();
+    setShowForm(false);
+  }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-bryant-gray-900">Members</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-bryant-gray-900">Members</h1>
+          <p className="text-sm text-bryant-gray-500">
+            Manage club members and their roles.
+          </p>
+        </div>
+        <Button variant="primary" onClick={() => setShowForm(true)}>
+          <UserPlus className="h-4 w-4" />
+          Invite Member
+        </Button>
+      </div>
 
-      {/* Search */}
-      <Card>
-        <CardContent className="py-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bryant-gray-400" />
-            <input
-              type="text"
-              placeholder="Search members..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="block w-full rounded-lg border border-bryant-gray-300 py-2 pl-9 pr-3 text-sm text-bryant-gray-900 placeholder:text-bryant-gray-400 focus:border-bryant-gold focus:outline-none focus:ring-2 focus:ring-bryant-gold focus:ring-offset-0 transition-colors"
-            />
+      {/* Modal Form */}
+      <Modal open={showForm} onClose={() => { setShowForm(false); resetForm(); }} title="Invite Member">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label="Email Address"
+            type="email"
+            required
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="member@bryant.edu"
+          />
+          <Select
+            label="Role"
+            options={roleOptions}
+            value={form.role}
+            onChange={(e) => setForm({ ...form, role: e.target.value })}
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" type="button" onClick={() => { setShowForm(false); resetForm(); }}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit">
+              Send Invite
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </form>
+      </Modal>
 
-      <DemoBox
-        title="No members yet"
-        description="Club members and their roles will be listed here."
-        icon={Users}
-      />
+      {/* Members list */}
+      {members.length > 0 ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {members.map((member) => (
+            <Card key={member.id}>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-bryant-gray-200 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-bryant-gray-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-bryant-gray-900 truncate">{member.email}</p>
+                      <Badge variant={member.role === "OFFICER" ? "domain" : "default"}>
+                        {member.role}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-bryant-gray-500 flex items-center gap-1 mt-0.5">
+                      <Mail className="h-3 w-3" />
+                      Invited {new Date(member.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <DemoBox
+          title="No members yet"
+          description="Club members and their roles will be listed here."
+          icon={Users}
+        />
+      )}
     </div>
   );
 }
