@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Layers, Plus, Code, ExternalLink, Eye, User } from "lucide-react";
+import { Layers, Plus, Code, ExternalLink, Eye, User, Upload, FileText, Image, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,9 +63,41 @@ export default function ClubProjectsPage() {
     githubUrl: "",
     tableauUrl: "",
   });
+  const [files, setFiles] = useState<{ name: string; url: string; type: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   function resetForm() {
     setForm({ title: "", abstract: "", content: "", tools: "", githubUrl: "", tableauUrl: "" });
+    setFiles([]);
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+    setUploading(true);
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        if (res.ok) {
+          const data = await res.json();
+          setFiles((prev) => [...prev, { name: data.name, url: data.url, type: data.type }]);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          setError(data.error || `Failed to upload ${file.name}`);
+        }
+      } catch {
+        setError(`Failed to upload ${file.name}`);
+      }
+    }
+    setUploading(false);
+    e.target.value = "";
+  }
+
+  function removeFile(idx: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== idx));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -77,6 +109,7 @@ export default function ClubProjectsPage() {
       const payload = {
         ...form,
         tools: form.tools ? form.tools.split(",").map((t) => t.trim()) : [],
+        mediaUrls: JSON.stringify(files.map((f) => ({ name: f.name, url: f.url, type: f.type }))),
       };
       const res = await fetch(`/api/clubs/${slug}/projects`, {
         method: "POST",
@@ -198,6 +231,47 @@ export default function ClubProjectsPage() {
             onChange={(e) => setForm({ ...form, tableauUrl: e.target.value })}
             placeholder="https://public.tableau.com/..."
           />
+
+          {/* File Upload */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-bryant-gray-700">
+              Attachments
+            </label>
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-bryant-gray-300 bg-bryant-gray-50 px-4 py-4 text-sm text-bryant-gray-500 transition-colors hover:border-bryant-gold hover:bg-bryant-gold/5">
+              <Upload className="h-4 w-4" />
+              {uploading ? "Uploading..." : "Click to upload files (images, PDFs, CSV, Excel — max 5MB each)"}
+              <input
+                type="file"
+                multiple
+                accept="image/*,.pdf,.csv,.xlsx,.pptx,.docx"
+                onChange={handleFileUpload}
+                className="hidden"
+                disabled={uploading}
+              />
+            </label>
+            {files.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                {files.map((file, idx) => (
+                  <div key={idx} className="flex items-center gap-2 rounded-lg bg-bryant-gray-100 px-3 py-2 text-sm">
+                    {file.type.startsWith("image/") ? (
+                      <Image className="h-4 w-4 text-blue-500 shrink-0" />
+                    ) : (
+                      <FileText className="h-4 w-4 text-bryant-gold shrink-0" />
+                    )}
+                    <span className="truncate flex-1 text-bryant-gray-700">{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(idx)}
+                      className="text-bryant-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" type="button" onClick={() => { setShowForm(false); resetForm(); }}>
               Cancel
