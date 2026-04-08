@@ -57,6 +57,15 @@ export default function ClubFeedPage() {
         setPosts((prev) => [post, ...prev]);
         setComposeText("");
         setShowCompose(false);
+      } else {
+        const data = await res.json();
+        if (res.status === 401) {
+          setError("Please sign in to post.");
+        } else if (res.status === 403) {
+          setError("You must join this club before posting. Use the Join Club button on the dashboard.");
+        } else {
+          setError(data.error || "Failed to post. Please try again.");
+        }
       }
     } catch {
       setError("Failed to save. Please try again.");
