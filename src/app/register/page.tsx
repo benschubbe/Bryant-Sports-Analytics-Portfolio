@@ -62,6 +62,11 @@ export default function RegisterPage() {
 
     if (!form.email.trim()) {
       errors.email = "Email is required.";
+    } else {
+      const domain = form.email.trim().toLowerCase().split("@")[1];
+      if (!domain || !domain.endsWith(".edu")) {
+        errors.email = "Please use a valid .edu email address.";
+      }
     }
 
     if (!form.password) {
@@ -166,7 +171,7 @@ export default function RegisterPage() {
         <div className="absolute left-1/2 top-1/3 h-96 w-96 -translate-x-1/2 rounded-full bg-bryant-gold/5 blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-md">
+      <div className="relative w-full max-w-md animate-[fadeSlideIn_0.5s_ease-out]">
         {/* Branding */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 h-1.5 w-16 rounded-full bg-gradient-to-r from-bryant-gold to-bryant-gold-light" />
@@ -178,7 +183,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <Card className="border-bryant-gray-800 bg-bryant-gray-900">
+        <Card className="border-bryant-gray-800 bg-bryant-gray-900 shadow-2xl shadow-black/20">
           <CardContent className="py-8">
             {error && (
               <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">

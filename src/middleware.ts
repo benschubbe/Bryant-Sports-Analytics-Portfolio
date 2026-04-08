@@ -12,7 +12,10 @@ export function middleware(request: NextRequest) {
   const isApiRoute = pathname.startsWith("/api");
   const isPublicPage = pathname === "/"
     || pathname.startsWith("/clubs")
-    || pathname.startsWith("/campus-feed");
+    || pathname.startsWith("/campus-feed")
+    || pathname.startsWith("/showcase")
+    || pathname.startsWith("/profiles")
+    || pathname.startsWith("/employers");
 
   // Allow public pages, auth pages, and API routes
   if (isPublicPage || isAuthPage || isApiRoute) {

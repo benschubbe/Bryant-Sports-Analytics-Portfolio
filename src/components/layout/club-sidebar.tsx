@@ -130,7 +130,7 @@ export function ClubSidebar({ club }: ClubSidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-6 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-3 py-2">
+      <nav className="flex-1 space-y-6 overflow-y-auto no-scrollbar px-3 py-2">
         {navSections.map((section) => (
           <div key={section.title}>
             <p className="mb-1 px-4 text-[11px] font-semibold tracking-widest text-white/40">
@@ -163,7 +163,7 @@ export function ClubSidebar({ club }: ClubSidebarProps) {
 
       {/* Bottom: User + Settings */}
       <div className="border-t border-white/10 p-4">
-        <div className="flex items-center gap-3">
+        <Link href="/my" className="flex items-center gap-3 group">
           {session?.user?.image ? (
             <img src={session.user.image} alt={userName} className="h-9 w-9 rounded-full object-cover" />
           ) : (
@@ -172,11 +172,17 @@ export function ClubSidebar({ club }: ClubSidebarProps) {
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{userName}</p>
-            <span className="inline-block rounded-full bg-bryant-gold/10 px-2 py-0.5 text-[10px] font-medium capitalize text-bryant-gold">
-              {userRole.toLowerCase()}
-            </span>
+            <p className="truncate text-sm font-medium group-hover:text-bryant-gold transition-colors">{userName}</p>
+            <span className="text-[10px] text-white/40">My Dashboard</span>
           </div>
+        </Link>
+        <div className="mt-2 flex items-center justify-between">
+          <Link
+            href="/my/applications"
+            className="text-[10px] text-white/40 hover:text-bryant-gold transition-colors"
+          >
+            My Applications
+          </Link>
           <Link
             href={`/clubs/${club.slug}/settings`}
             className="rounded-lg p-1.5 text-white/40 transition-colors hover:bg-white/5 hover:text-white"

@@ -110,15 +110,22 @@ export default function ClubFeedPage() {
 
       {/* Compose Box */}
       {showCompose && (
-        <Card>
+        <Card className="border-bryant-gold/20 shadow-md">
           <CardContent className="space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bryant-gold/10 text-sm font-bold text-bryant-gold">
+                You
+              </div>
+              <div className="flex-1">
             <textarea
               value={composeText}
               onChange={(e) => setComposeText(e.target.value)}
               placeholder="Share an update with your club..."
               rows={3}
-              className="block w-full rounded-lg border border-bryant-gray-300 px-3 py-2 text-sm text-bryant-gray-900 placeholder:text-bryant-gray-400 focus:border-bryant-gold focus:outline-none focus:ring-2 focus:ring-bryant-gold focus:ring-offset-0 transition-colors resize-none"
+              className="block w-full rounded-xl border border-bryant-gray-200 px-3.5 py-2.5 text-sm text-bryant-gray-900 placeholder:text-bryant-gray-400 focus:border-bryant-gold focus:outline-none focus:ring-2 focus:ring-bryant-gold/30 focus:ring-offset-0 transition-all duration-200 resize-none"
             />
+              </div>
+            </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => { setShowCompose(false); setComposeText(""); }}>
                 Cancel
@@ -142,11 +149,11 @@ export default function ClubFeedPage() {
       {posts.length > 0 ? (
         <div className="space-y-4">
           {posts.map((post) => (
-            <Card key={post.id}>
-              <CardContent>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-8 w-8 rounded-full bg-bryant-gray-200 flex items-center justify-center">
-                    <MessageSquare className="h-4 w-4 text-bryant-gray-500" />
+            <Card key={post.id} className="transition-all duration-200 hover:shadow-md hover:border-bryant-gray-300">
+              <CardContent className="py-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-bryant-gold/20 to-bryant-gold/10 flex items-center justify-center ring-1 ring-bryant-gold/10">
+                    <MessageSquare className="h-4 w-4 text-bryant-gold" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-bryant-gray-900">

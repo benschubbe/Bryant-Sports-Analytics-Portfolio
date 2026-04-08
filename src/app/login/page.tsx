@@ -49,7 +49,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="relative w-full max-w-md">
+    <div className="relative w-full max-w-md animate-[fadeSlideIn_0.5s_ease-out]">
       {/* Branding */}
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 h-1.5 w-16 rounded-full bg-gradient-to-r from-bryant-gold to-bryant-gold-light" />
@@ -61,7 +61,7 @@ function LoginForm() {
         </p>
       </div>
 
-      <Card className="border-bryant-gray-800 bg-bryant-gray-900">
+      <Card className="border-bryant-gray-800 bg-bryant-gray-900 shadow-2xl shadow-black/20">
         <CardContent className="py-8">
           {justRegistered && (
             <div className="mb-6 flex items-center gap-3 rounded-lg border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-400">

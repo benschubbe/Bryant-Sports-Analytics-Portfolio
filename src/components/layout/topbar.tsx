@@ -1,6 +1,7 @@
 "use client";
 
-import { Search, Bell, LogOut } from "lucide-react";
+import Link from "next/link";
+import { Search, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { getInitials } from "@/lib/utils";
@@ -34,16 +35,6 @@ export function Topbar({ pageTitle }: TopbarProps) {
           />
         </div>
 
-        {/* Notification bell */}
-        <button
-          type="button"
-          className="relative rounded-lg p-2 text-bryant-gray-500 transition-colors hover:bg-bryant-gray-100"
-          aria-label="Notifications"
-        >
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
-        </button>
-
         {/* Sign out */}
         <button
           type="button"
@@ -54,14 +45,16 @@ export function Topbar({ pageTitle }: TopbarProps) {
           <LogOut className="h-5 w-5" />
         </button>
 
-        {/* User avatar */}
-        {session?.user?.image ? (
-          <img src={session.user.image} alt={session?.user?.name || "User"} className="h-9 w-9 rounded-full object-cover" />
-        ) : (
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-bryant-gold/20 text-sm font-semibold text-bryant-gold">
-            {initials}
-          </div>
-        )}
+        {/* User avatar — links to personal dashboard */}
+        <Link href="/my" className="group" title="My Dashboard">
+          {session?.user?.image ? (
+            <img src={session.user.image} alt={session?.user?.name || "User"} className="h-9 w-9 rounded-full object-cover ring-2 ring-transparent group-hover:ring-bryant-gold transition-all" />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-bryant-gold/20 text-sm font-semibold text-bryant-gold ring-2 ring-transparent group-hover:ring-bryant-gold transition-all">
+              {initials}
+            </div>
+          )}
+        </Link>
       </div>
     </header>
   );

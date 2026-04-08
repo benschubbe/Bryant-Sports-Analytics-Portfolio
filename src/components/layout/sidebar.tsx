@@ -106,7 +106,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-6 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-3 py-2">
+      <nav className="flex-1 space-y-6 overflow-y-auto no-scrollbar px-3 py-2">
         {navSections.map((section) => (
           <div key={section.title}>
             <p className="mb-1 px-4 text-[11px] font-semibold tracking-widest text-white/40">

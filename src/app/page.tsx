@@ -35,6 +35,12 @@ const features = [
       "Plan speaker sessions, workshops, and meetups. Keep your club community engaged and growing.",
     icon: Calendar,
   },
+  {
+    title: "Employer Discovery",
+    description:
+      "Employers can search student profiles by skills and find candidates directly.",
+    icon: Rocket,
+  },
 ];
 
 export default function LandingPage() {
@@ -67,6 +73,12 @@ export default function LandingPage() {
               className="text-sm text-white/70 transition-colors hover:text-white"
             >
               Explore Clubs
+            </Link>
+            <Link
+              href="/employers"
+              className="text-sm text-white/70 transition-colors hover:text-white"
+            >
+              For Employers
             </Link>
             <Link href="/login">
               <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
@@ -142,7 +154,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {features.map((feature) => {
               const Icon = feature.icon;
               return (

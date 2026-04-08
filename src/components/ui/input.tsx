@@ -23,7 +23,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           id={inputId}
-          className={`block w-full rounded-lg border px-3 py-2 text-sm text-bryant-gray-900 placeholder:text-bryant-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-0 transition-colors ${
+          className={`block w-full rounded-xl border px-3.5 py-2.5 text-sm text-bryant-gray-900 placeholder:text-bryant-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-0 transition-all duration-200 ${
             error
               ? "border-error focus:ring-error"
               : "border-bryant-gray-300 focus:border-bryant-gold focus:ring-bryant-gold"

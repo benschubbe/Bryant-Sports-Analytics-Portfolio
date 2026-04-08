@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Bell, LogOut, ChevronDown } from "lucide-react";
+import { Search, LogOut, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { getInitials } from "@/lib/utils";
@@ -39,16 +39,6 @@ export function ClubTopbar({ clubName, pageTitle }: ClubTopbarProps) {
             className="h-9 w-56 rounded-lg border border-bryant-gray-200 bg-bryant-gray-50 pl-9 pr-3 text-sm text-bryant-black placeholder:text-bryant-gray-400 focus:border-bryant-gold focus:outline-none focus:ring-1 focus:ring-bryant-gold"
           />
         </div>
-
-        {/* Notification bell */}
-        <button
-          type="button"
-          className="relative rounded-lg p-2 text-bryant-gray-500 transition-colors hover:bg-bryant-gray-100"
-          aria-label="Notifications"
-        >
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
-        </button>
 
         {/* Sign out */}
         <button

@@ -38,6 +38,15 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
+    // Require .edu email
+    const domain = normalizedEmail.split("@")[1];
+    if (!domain || !domain.endsWith(".edu")) {
+      return NextResponse.json(
+        { error: "Please use a valid .edu email address to register." },
+        { status: 400 },
+      );
+    }
+
     // Check for existing account
     const existing = await prisma.user.findUnique({
       where: { email: normalizedEmail },

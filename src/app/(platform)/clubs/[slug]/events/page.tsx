@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { CalendarDays, Plus } from "lucide-react";
+import { CalendarDays, Plus, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,23 @@ interface Event {
   endTime: string;
 }
 
+const estDateFormat = (date: string) =>
+  new Date(date).toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const estTimeFormat = (date: string) =>
+  new Date(date).toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
 export default function ClubEventsPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -35,12 +52,20 @@ export default function ClubEventsPage() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
 
+  // Summary state
+  const [summaryEventId, setSummaryEventId] = useState<string | null>(null);
+  const [summaryText, setSummaryText] = useState("");
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summarySuccess, setSummarySuccess] = useState<string | null>(null);
+
   useEffect(() => {
     async function loadData() {
       try {
         const res = await fetch(`/api/clubs/${slug}/events`, { cache: "no-store" });
         if (res.ok) {
-          setEvents(await res.json());
+          const data: Event[] = await res.json();
+          data.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+          setEvents(data);
         }
       } catch {
         // Failed
@@ -81,7 +106,9 @@ export default function ClubEventsPage() {
       });
       if (res.ok) {
         const event = await res.json();
-        setEvents((prev) => [event, ...prev]);
+        setEvents((prev) =>
+          [...prev, event].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+        );
         resetForm();
         setShowForm(false);
       } else {
@@ -187,11 +214,79 @@ export default function ClubEventsPage() {
                 <div className="mt-3 flex items-center gap-2 text-xs text-bryant-gray-500">
                   <CalendarDays className="h-3.5 w-3.5" />
                   <span>
-                    {new Date(event.startTime).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}{" "}
-                    {new Date(event.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {estDateFormat(event.startTime)}
                     {" — "}
-                    {new Date(event.endTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {estTimeFormat(event.endTime)}
                   </span>
+                  <span className="ml-1 rounded bg-bryant-gray-100 px-1 py-0.5 text-[10px] font-medium text-bryant-gray-500">
+                    EST
+                  </span>
+                </div>
+                <div className="mt-2">
+                  {summarySuccess === event.id ? (
+                    <p className="text-xs text-green-600">Summary posted to feed!</p>
+                  ) : summaryEventId === event.id ? (
+                    <div className="mt-2 space-y-2">
+                      <textarea
+                        className="w-full rounded-lg border border-bryant-gray-200 p-2 text-sm focus:border-bryant-gold focus:outline-none focus:ring-1 focus:ring-bryant-gold"
+                        rows={3}
+                        placeholder="Write your event summary..."
+                        value={summaryText}
+                        onChange={(e) => setSummaryText(e.target.value)}
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          loading={summaryLoading}
+                          onClick={async () => {
+                            if (!summaryText.trim()) return;
+                            setSummaryLoading(true);
+                            try {
+                              const res = await fetch(`/api/clubs/${slug}/posts`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  content: `\u{1F4CB} Event Summary: ${event.title}\n\n${summaryText.trim()}`,
+                                }),
+                              });
+                              if (res.ok) {
+                                setSummarySuccess(event.id);
+                                setSummaryEventId(null);
+                                setSummaryText("");
+                                setTimeout(() => setSummarySuccess(null), 3000);
+                              }
+                            } catch {
+                              // Failed
+                            } finally {
+                              setSummaryLoading(false);
+                            }
+                          }}
+                        >
+                          Submit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSummaryEventId(null);
+                            setSummaryText("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSummaryEventId(event.id)}
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      Add Summary
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -106,10 +106,10 @@ export default function ClubsDirectoryPage() {
           Back to Home
         </Link>
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-10 flex items-center justify-between rounded-2xl bg-gradient-to-r from-bryant-black to-bryant-gray-800 px-8 py-8">
           <div>
-            <h1 className="text-3xl font-bold text-bryant-black">Folio</h1>
-            <p className="mt-1 text-bryant-gray-500">
+            <h1 className="text-3xl font-bold text-white">Folio</h1>
+            <p className="mt-1 text-white/60">
               Discover and join clubs across campus
             </p>
           </div>
@@ -118,6 +118,12 @@ export default function ClubsDirectoryPage() {
               <Button variant="outline" size="lg">
                 <User className="mr-2 h-4 w-4" />
                 My Dashboard
+              </Button>
+            </Link>
+            <Link href="/showcase">
+              <Button variant="outline" size="lg">
+                <Trophy className="mr-2 h-4 w-4" />
+                Student Showcase
               </Button>
             </Link>
             <Link href="/campus-feed">
@@ -183,7 +189,7 @@ export default function ClubsDirectoryPage() {
               placeholder="Search clubs by name or domain..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="block w-full rounded-lg border border-bryant-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-bryant-black placeholder:text-bryant-gray-400 focus:border-bryant-gold focus:outline-none focus:ring-1 focus:ring-bryant-gold"
+              className="block w-full rounded-xl border border-bryant-gray-200 bg-white py-3 pl-10 pr-4 text-sm text-bryant-black shadow-sm placeholder:text-bryant-gray-400 focus:border-bryant-gold focus:outline-none focus:ring-2 focus:ring-bryant-gold/30 transition-all duration-200"
             />
           </div>
         </div>
@@ -211,13 +217,13 @@ export default function ClubsDirectoryPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {clubs.map((club) => {
               const Icon = getDomainIcon(club.domain);
               const accentColor = club.color || "#C4972F";
               return (
                 <Link key={club.id} href={`/clubs/${club.slug}/dashboard`}>
-                  <Card className="group h-full cursor-pointer transition-all hover:shadow-lg hover:border-bryant-gold/40">
+                  <Card className="group h-full cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-bryant-gold/40 hover:-translate-y-0.5">
                     {/* Color bar */}
                     <div
                       className="h-1.5 rounded-t-xl"

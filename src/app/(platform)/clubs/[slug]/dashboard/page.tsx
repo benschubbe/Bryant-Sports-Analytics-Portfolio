@@ -56,7 +56,9 @@ export default function ClubDashboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
   const [isMember, setIsMember] = useState<boolean | null>(null);
+  const [memberRole, setMemberRole] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [joinError, setJoinError] = useState("");
 
   useEffect(() => {
@@ -77,13 +79,14 @@ export default function ClubDashboardPage() {
       }
       setLoadingLeaderboard(false);
 
-      // Check if current user is a member
+      // Check if current user is a member and get their role
       if (session?.user?.id && membersRes.status === "fulfilled" && membersRes.value?.ok) {
         const members = await membersRes.value.json();
-        const found = members.some(
-          (m: { user: { id: string } }) => m.user.id === session.user.id,
+        const me = members.find(
+          (m: { user: { id: string }; role: string }) => m.user.id === session.user.id,
         );
-        setIsMember(found);
+        setIsMember(!!me);
+        setMemberRole(me?.role ?? null);
       } else if (!session?.user) {
         setIsMember(false);
       }
@@ -120,6 +123,30 @@ export default function ClubDashboardPage() {
     }
   }
 
+  async function handleLeave() {
+    setLeaving(true);
+    setJoinError("");
+    try {
+      const res = await fetch(`/api/clubs/${slug}/members/leave`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        setIsMember(false);
+        setMemberRole(null);
+        // Refresh stats
+        const statsRes = await fetch(`/api/clubs/${slug}/stats`);
+        if (statsRes.ok) setStats(await statsRes.json());
+      } else {
+        const data = await res.json();
+        setJoinError(data.error || "Failed to leave. Please try again.");
+      }
+    } catch {
+      setJoinError("Failed to leave. Please try again.");
+    } finally {
+      setLeaving(false);
+    }
+  }
+
   const roleIcon = (role: string) => {
     if (role === "PRESIDENT") return <Crown className="h-3.5 w-3.5 text-bryant-gold" />;
     if (role === "OFFICER") return <Shield className="h-3.5 w-3.5 text-blue-500" />;
@@ -145,9 +172,22 @@ export default function ClubDashboardPage() {
           </Button>
         )}
         {isMember === true && (
-          <div className="flex items-center gap-2 text-sm text-green-600">
-            <CheckCircle2 className="h-4 w-4" />
-            Member
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <CheckCircle2 className="h-4 w-4" />
+              Member
+            </div>
+            {memberRole !== "PRESIDENT" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-red-300 text-red-600 hover:bg-red-50"
+                onClick={handleLeave}
+                loading={leaving}
+              >
+                Leave Club
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -162,15 +202,17 @@ export default function ClubDashboardPage() {
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Members", value: stats?.memberCount, icon: Users },
-          { label: "Projects", value: stats?.projectCount, icon: Layers },
-          { label: "Posts", value: stats?.postCount, icon: MessageSquare },
-          { label: "Events", value: stats?.eventCount, icon: Calendar },
+          { label: "Members", value: stats?.memberCount, icon: Users, bg: "from-blue-50 to-indigo-50", iconColor: "text-blue-500" },
+          { label: "Projects", value: stats?.projectCount, icon: Layers, bg: "from-amber-50 to-orange-50", iconColor: "text-amber-500" },
+          { label: "Posts", value: stats?.postCount, icon: MessageSquare, bg: "from-green-50 to-emerald-50", iconColor: "text-green-500" },
+          { label: "Events", value: stats?.eventCount, icon: Calendar, bg: "from-purple-50 to-violet-50", iconColor: "text-purple-500" },
         ].map((stat) => (
           <Card key={stat.label}>
-            <CardContent className="py-4 text-center">
+            <CardContent className={`py-5 text-center bg-gradient-to-br ${stat.bg}`}>
               <div className="flex items-center justify-center mb-2">
-                <stat.icon className="h-5 w-5 text-bryant-gray-400" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-sm">
+                  <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
+                </div>
               </div>
               <p className="text-2xl font-bold text-bryant-gray-900">
                 {loadingStats ? "..." : stat.value ?? "\u2014"}
@@ -204,8 +246,8 @@ export default function ClubDashboardPage() {
                 {leaderboard.slice(0, 10).map((entry, idx) => (
                   <div
                     key={entry.userId}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 ${
-                      idx === 0 ? "bg-bryant-gold/5" : ""
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors duration-150 hover:bg-bryant-gray-50 ${
+                      idx === 0 ? "bg-bryant-gold/5 ring-1 ring-bryant-gold/10" : ""
                     }`}
                   >
                     {/* Rank */}
@@ -263,26 +305,26 @@ export default function ClubDashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <Link href={`/clubs/${slug}/projects`} className="block">
-              <Button variant="outline" className="w-full justify-start">
-                <Plus className="h-4 w-4" />
+              <Button variant="outline" className="w-full justify-start gap-3 py-3 hover:border-bryant-gold/40 hover:bg-bryant-gold/5">
+                <Plus className="h-4 w-4 text-bryant-gold" />
                 Create Project
               </Button>
             </Link>
             <Link href={`/clubs/${slug}/feed`} className="block">
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="h-4 w-4" />
+              <Button variant="outline" className="w-full justify-start gap-3 py-3 hover:border-bryant-gold/40 hover:bg-bryant-gold/5">
+                <FileText className="h-4 w-4 text-bryant-gold" />
                 New Post
               </Button>
             </Link>
             <Link href={`/clubs/${slug}/events`} className="block">
-              <Button variant="outline" className="w-full justify-start">
-                <CalendarDays className="h-4 w-4" />
+              <Button variant="outline" className="w-full justify-start gap-3 py-3 hover:border-bryant-gold/40 hover:bg-bryant-gold/5">
+                <CalendarDays className="h-4 w-4 text-bryant-gold" />
                 Plan Event
               </Button>
             </Link>
             <Link href={`/clubs/${slug}/members`} className="block">
-              <Button variant="outline" className="w-full justify-start">
-                <Users className="h-4 w-4" />
+              <Button variant="outline" className="w-full justify-start gap-3 py-3 hover:border-bryant-gold/40 hover:bg-bryant-gold/5">
+                <Users className="h-4 w-4 text-bryant-gold" />
                 View Members
               </Button>
             </Link>

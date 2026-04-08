@@ -51,16 +51,18 @@ export default function ClubLayout({
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-bryant-gray-50">
       {/* Fixed sidebar */}
       <ClubSidebar club={club} />
 
       {/* Main content area offset by sidebar width */}
-      <div className="ml-64 flex flex-1 flex-col">
+      <div className="ml-64 flex flex-1 flex-col border-l border-bryant-gray-200/60">
         <ClubTopbar clubName={clubName} pageTitle={pageTitle} />
 
-        <main className="flex-1 overflow-y-auto bg-bryant-gray-50 p-6">
-          {children}
+        <main className="flex-1 overflow-y-auto bg-bryant-gray-50 p-8">
+          <div className="mx-auto max-w-7xl animate-in fade-in duration-300">
+            {children}
+          </div>
         </main>
       </div>
     </div>

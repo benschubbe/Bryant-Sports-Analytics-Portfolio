@@ -12,6 +12,7 @@ import {
   Calendar,
   ChevronRight,
   BarChart3,
+  Briefcase,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,19 +57,25 @@ export default function MyDashboardPage() {
   const [clubs, setClubs] = useState<ClubMembership[]>([]);
   const [projects, setProjects] = useState<MyProject[]>([]);
   const [posts, setPosts] = useState<MyPost[]>([]);
+  const [applicationCount, setApplicationCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadAll() {
       try {
-        const [clubsRes, projectsRes, postsRes] = await Promise.all([
+        const [clubsRes, projectsRes, postsRes, appsRes] = await Promise.all([
           fetch("/api/my/clubs"),
           fetch("/api/my/projects"),
           fetch("/api/my/feed"),
+          fetch("/api/my/applications"),
         ]);
 
         if (clubsRes.ok) setClubs(await clubsRes.json());
         if (projectsRes.ok) setProjects(await projectsRes.json());
+        if (appsRes.ok) {
+          const apps = await appsRes.json();
+          setApplicationCount(Array.isArray(apps) ? apps.length : 0);
+        }
         if (postsRes.ok) {
           const allPosts = await postsRes.json();
           // Filter to only my posts
@@ -141,17 +148,17 @@ export default function MyDashboardPage() {
     <div className="min-h-screen bg-bryant-gray-50">
       <div className="mx-auto max-w-5xl px-6 py-12">
         {/* Profile header */}
-        <div className="mb-8 flex items-center gap-4">
+        <div className="mb-10 flex items-center gap-5 rounded-2xl bg-gradient-to-r from-bryant-black to-bryant-gray-800 px-8 py-8">
           {session?.user?.image ? (
-            <img src={session.user.image} alt={userName} className="h-14 w-14 rounded-full object-cover" />
+            <img src={session.user.image} alt={userName} className="h-16 w-16 rounded-full object-cover ring-2 ring-bryant-gold/40" />
           ) : (
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-bryant-gold/20 text-lg font-bold text-bryant-gold">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-bryant-gold/20 text-xl font-bold text-bryant-gold ring-2 ring-bryant-gold/40">
               {initials}
             </div>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-bryant-black">{userName}</h1>
-            <p className="text-sm text-bryant-gray-500">
+            <h1 className="text-2xl font-bold text-white">{userName}</h1>
+            <p className="text-sm text-white/60">
               {session?.user?.email} · Member of {totalClubs} club{totalClubs !== 1 ? "s" : ""}
             </p>
           </div>
@@ -160,14 +167,14 @@ export default function MyDashboardPage() {
         {/* Stats cards */}
         <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: "Clubs", value: totalClubs, icon: Building2 },
-            { label: "Projects", value: totalProjects, icon: Layers },
-            { label: "Posts", value: totalPosts, icon: MessageSquare },
-            { label: "Project Views", value: totalViews, icon: BarChart3 },
+            { label: "Clubs", value: totalClubs, icon: Building2, bg: "from-amber-50 to-orange-50" },
+            { label: "Projects", value: totalProjects, icon: Layers, bg: "from-blue-50 to-indigo-50" },
+            { label: "Posts", value: totalPosts, icon: MessageSquare, bg: "from-green-50 to-emerald-50" },
+            { label: "Project Views", value: totalViews, icon: BarChart3, bg: "from-purple-50 to-violet-50" },
           ].map((stat) => (
             <Card key={stat.label}>
-              <CardContent className="flex items-center gap-3 py-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-bryant-gold/10">
+              <CardContent className={`flex items-center gap-3 py-4 bg-gradient-to-br ${stat.bg}`}>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-sm">
                   <stat.icon className="h-5 w-5 text-bryant-gold" />
                 </div>
                 <div>
@@ -177,6 +184,31 @@ export default function MyDashboardPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* My Applications link */}
+        <div className="mb-8">
+          <Link href="/my/applications">
+            <Card className="group cursor-pointer transition-all hover:shadow-md hover:border-bryant-gold/40">
+              <CardContent className="flex items-center gap-4 py-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-bryant-gold/10">
+                  <Briefcase className="h-5 w-5 text-bryant-gold" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-bryant-black group-hover:text-bryant-gold transition-colors">
+                    My Applications
+                  </h3>
+                  <p className="text-xs text-bryant-gray-500">
+                    Track your job applications and interview progress
+                  </p>
+                </div>
+                {applicationCount > 0 && (
+                  <Badge variant="sport">{applicationCount}</Badge>
+                )}
+                <ChevronRight className="h-4 w-4 text-bryant-gray-300 group-hover:text-bryant-gold transition-colors" />
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         <div className="space-y-8">
