@@ -11,5 +11,6 @@ export const DOMAIN_OPTIONS = [
   { value: "Arts", label: "Arts" },
   { value: "Community Service", label: "Community Service" },
   { value: "Business", label: "Business" },
+  { value: "Club Sports", label: "Club Sports" },
   { value: "Other", label: "Other" },
 ];

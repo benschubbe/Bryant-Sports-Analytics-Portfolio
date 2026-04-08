@@ -23,6 +23,7 @@ import {
   Rss,
   User,
   ArrowLeft,
+  Trophy,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ const domainIcons: Record<string, React.ComponentType<{ className?: string }>> =
   "Arts": Palette,
   "Community Service": Heart,
   "Business": Briefcase,
+  "Club Sports": Trophy,
 };
 
 function getDomainIcon(domain: string | null) {
