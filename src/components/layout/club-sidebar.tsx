@@ -71,7 +71,6 @@ function getNavSections(slug: string): NavSection[] {
       title: "CAREER",
       items: [
         { label: "Jobs", href: `${prefix}/jobs`, icon: Briefcase },
-        { label: "Applications", href: `${prefix}/applications`, icon: ClipboardList },
       ],
     },
     {
