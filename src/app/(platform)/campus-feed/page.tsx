@@ -3,287 +3,206 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  MessageSquare,
+  FileText,
+  Download,
+  Building2,
+  Users,
   FolderOpen,
   Calendar,
-  UserPlus,
-  Activity,
-  FileText,
+  TrendingUp,
+  ArrowLeft,
 } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DemoBox } from "@/components/club/demo-box";
-import { timeAgo } from "@/lib/utils";
-
-interface FeedItem {
-  clubId: string;
-  clubName: string;
-  clubSlug: string;
-  clubDomain: string | null;
-  clubColor: string | null;
-  type: "post" | "project" | "event" | "member_joined";
-  title: string;
-  detail: string | null;
-  author: { name: string; image: string | null } | null;
-  createdAt: string;
-}
 
 interface Club {
   id: string;
   name: string;
   slug: string;
-  color: string | null;
   domain: string | null;
-}
-
-interface ClubReport {
-  summary: string;
-  stats: {
-    newPosts: number;
-    newProjects: number;
-    newMembers: number;
+  color: string | null;
+  _count: {
+    memberships: number;
+    projects: number;
+    posts: number;
+    events: number;
   };
 }
 
-const activityIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  post: MessageSquare,
-  project: FolderOpen,
-  event: Calendar,
-  member_joined: UserPlus,
-};
-
-function getActivityIcon(type: string) {
-  return activityIcons[type] || Activity;
+interface ReportData {
+  clubs: Club[];
+  uniqueMembers: number;
 }
 
-export default function CampusFeedPage() {
-  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
-  const [loadingFeed, setLoadingFeed] = useState(true);
+export default function CampusReportPage() {
+  const [data, setData] = useState<ReportData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
-  const [clubs, setClubs] = useState<Club[]>([]);
-  const [reports, setReports] = useState<Record<string, ClubReport | null>>({});
-  const [loadingReports, setLoadingReports] = useState(true);
-
-  // Fetch feed
   useEffect(() => {
-    async function fetchFeed() {
-      try {
-        const res = await fetch("/api/feed");
-        if (res.ok) {
-          const data = await res.json();
-          setFeedItems(data);
-        }
-      } catch {
-        // silently fail
-      } finally {
-        setLoadingFeed(false);
-      }
-    }
-    fetchFeed();
-  }, []);
-
-  // Fetch clubs then reports
-  useEffect(() => {
-    async function fetchClubsAndReports() {
+    async function fetchData() {
       try {
         const res = await fetch("/api/clubs");
-        if (!res.ok) return;
-        const clubData: Club[] = await res.json();
-        const limited = clubData.slice(0, 5);
-        setClubs(limited);
-
-        const reportEntries = await Promise.all(
-          limited.map(async (club) => {
-            try {
-              const r = await fetch(`/api/clubs/${club.slug}/report`);
-              if (r.ok) {
-                const report = await r.json();
-                return [club.slug, report] as const;
-              }
-            } catch {
-              // skip
-            }
-            return [club.slug, null] as const;
-          })
-        );
-        const reportMap: Record<string, ClubReport | null> = {};
-        for (const [slug, report] of reportEntries) {
-          reportMap[slug] = report;
+        if (res.ok) {
+          const result = await res.json();
+          setData({
+            clubs: result.clubs || result,
+            uniqueMembers: result.uniqueMembers || 0,
+          });
         }
-        setReports(reportMap);
       } catch {
-        // silently fail
+        // Failed
       } finally {
-        setLoadingReports(false);
+        setLoading(false);
       }
     }
-    fetchClubsAndReports();
+    fetchData();
   }, []);
 
-  const hasReports = Object.values(reports).some((r) => r !== null);
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      const res = await fetch("/api/reports/weekly");
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `folio-weekly-report-${new Date().toISOString().split("T")[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      // Failed
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  const clubs = data?.clubs || [];
+  const totalPosts = clubs.reduce((sum, c) => sum + (c._count?.posts || 0), 0);
+  const totalProjects = clubs.reduce((sum, c) => sum + (c._count?.projects || 0), 0);
+  const totalEvents = clubs.reduce((sum, c) => sum + (c._count?.events || 0), 0);
 
   return (
     <div className="min-h-screen bg-bryant-gray-50">
-      <div className="mx-auto max-w-6xl px-6 py-12">
+      <div className="mx-auto max-w-5xl px-6 py-12">
+        <Link
+          href="/clubs"
+          className="inline-flex items-center gap-2 text-sm text-bryant-gray-500 hover:text-bryant-black transition-colors mb-6"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Clubs
+        </Link>
+
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-bryant-black">Campus Feed</h1>
-          <p className="mt-1 text-bryant-gray-500">
-            See what&apos;s happening across all clubs at Bryant
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-bryant-black">
+              Weekly Campus Report
+            </h1>
+            <p className="mt-1 text-bryant-gray-500">
+              AI-generated summary of all club activity this week
+            </p>
+          </div>
+          <Button onClick={handleDownload} loading={downloading} size="lg">
+            <Download className="h-4 w-4" />
+            Download PDF Report
+          </Button>
         </div>
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* Main Feed (2 cols) */}
-          <div className="lg:col-span-2 space-y-4">
-            {loadingFeed ? (
-              // Skeleton cards
-              <>
-                {[1, 2, 3].map((i) => (
-                  <Card key={i}>
-                    <CardContent className="py-5">
-                      <div className="animate-pulse space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="h-3 w-3 rounded-full bg-bryant-gray-200" />
-                          <div className="h-4 w-32 rounded bg-bryant-gray-200" />
-                          <div className="h-5 w-20 rounded-full bg-bryant-gray-200" />
-                        </div>
-                        <div className="h-5 w-3/4 rounded bg-bryant-gray-200" />
-                        <div className="h-4 w-full rounded bg-bryant-gray-200" />
-                        <div className="h-4 w-1/2 rounded bg-bryant-gray-200" />
-                        <div className="flex items-center gap-2">
-                          <div className="h-3 w-24 rounded bg-bryant-gray-200" />
-                          <div className="h-3 w-16 rounded bg-bryant-gray-200" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </>
-            ) : feedItems.length === 0 ? (
-              <DemoBox
-                title="No activity yet"
-                description="Activity from clubs will appear here as members post, create projects, and host events."
-                icon={Activity}
-              />
-            ) : (
-              feedItems.map((item, idx) => {
-                const Icon = getActivityIcon(item.type);
-                const accentColor = item.clubColor || "#C4972F";
-                return (
-                  <Link
-                    key={`${item.clubId}-${item.type}-${idx}`}
-                    href={`/clubs/${item.clubSlug}/dashboard`}
-                  >
-                    <Card className="group cursor-pointer transition-all hover:shadow-lg hover:border-bryant-gold/40">
-                      <CardContent className="py-5">
-                        {/* Club name + color dot + domain badge */}
-                        <div className="flex items-center gap-2 mb-2">
-                          <span
-                            className="inline-block h-3 w-3 rounded-full shrink-0"
-                            style={{ backgroundColor: accentColor }}
-                          />
-                          <span className="text-sm font-medium text-bryant-gray-700">
-                            {item.clubName}
-                          </span>
-                          {item.clubDomain && (
-                            <Badge variant="domain">{item.clubDomain}</Badge>
-                          )}
-                        </div>
+        {/* Stats overview */}
+        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-5">
+          {[
+            { label: "Clubs", value: clubs.length, icon: Building2 },
+            { label: "Members", value: data?.uniqueMembers || 0, icon: Users },
+            { label: "Posts", value: totalPosts, icon: FileText },
+            { label: "Projects", value: totalProjects, icon: FolderOpen },
+            { label: "Events", value: totalEvents, icon: Calendar },
+          ].map((stat) => (
+            <Card key={stat.label}>
+              <CardContent className="py-4 text-center">
+                <stat.icon className="mx-auto mb-2 h-5 w-5 text-bryant-gold" />
+                <p className="text-2xl font-bold text-bryant-black">
+                  {loading ? "..." : stat.value}
+                </p>
+                <p className="text-xs text-bryant-gray-500">{stat.label}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-                        {/* Activity type icon + title */}
-                        <div className="flex items-start gap-2 mb-1">
-                          <Icon className="h-4 w-4 text-bryant-gray-400 mt-0.5 shrink-0" />
-                          <h3 className="font-semibold text-bryant-black group-hover:text-bryant-gold transition-colors">
-                            {item.title}
-                          </h3>
-                        </div>
+        {/* Club activity cards */}
+        <div className="mb-6 flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-bryant-gold" />
+          <h2 className="text-lg font-semibold text-bryant-black">Club Activity</h2>
+        </div>
 
-                        {/* Detail text */}
-                        {item.detail && (
-                          <p className="text-sm text-bryant-gray-500 line-clamp-2 ml-6">
-                            {item.detail}
-                          </p>
-                        )}
-
-                        {/* Author + timestamp */}
-                        <div className="mt-3 ml-6 flex items-center gap-2 text-xs text-bryant-gray-400">
-                          {item.author?.name && <span>{item.author.name}</span>}
-                          {item.author?.name && <span>&middot;</span>}
-                          <span>{timeAgo(item.createdAt)}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })
-            )}
-          </div>
-
-          {/* Sidebar (1 col) */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-bryant-black">
-              Weekly Club Reports
-            </h2>
-
-            {loadingReports ? (
-              <>
-                {[1, 2, 3].map((i) => (
-                  <Card key={i}>
-                    <CardContent className="py-4">
-                      <div className="animate-pulse space-y-2">
-                        <div className="h-4 w-32 rounded bg-bryant-gray-200" />
-                        <div className="h-3 w-full rounded bg-bryant-gray-200" />
-                        <div className="h-3 w-3/4 rounded bg-bryant-gray-200" />
-                        <div className="h-3 w-1/2 rounded bg-bryant-gray-200" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </>
-            ) : !hasReports ? (
-              <DemoBox
-                title="No reports yet"
-                description="Weekly reports will appear here summarizing each club's activity."
-                icon={FileText}
-              />
-            ) : (
-              clubs.map((club) => {
-                const report = reports[club.slug];
-                if (!report) return null;
-                const accentColor = club.color || "#C4972F";
-                return (
-                  <Card key={club.slug} className="overflow-hidden">
-                    {/* Colored accent bar */}
-                    <div
-                      className="h-1.5"
-                      style={{ backgroundColor: accentColor }}
-                    />
-                    <CardContent className="py-4">
-                      <h3 className="font-semibold text-bryant-black text-sm">
-                        {club.name}
-                      </h3>
-                      <p className="mt-1 text-sm text-bryant-gray-500 line-clamp-3">
-                        {report.summary}
-                      </p>
-                      <div className="mt-3 text-xs text-bryant-gray-400">
-                        {report.stats.newPosts} posts &middot;{" "}
-                        {report.stats.newProjects} projects &middot;{" "}
-                        {report.stats.newMembers} members
-                      </div>
-                      <Link
-                        href={`/clubs/${club.slug}/dashboard`}
-                        className="mt-2 inline-block text-xs font-medium text-bryant-gold hover:text-bryant-gold-light transition-colors"
+        {loading ? (
+          <div className="py-12 text-center text-bryant-gray-400">Loading...</div>
+        ) : clubs.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-12 text-center">
+              <Building2 className="mx-auto mb-3 h-10 w-10 text-bryant-gray-300" />
+              <p className="text-sm text-bryant-gray-500">No clubs registered yet.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {clubs.map((club) => {
+              const accentColor = club.color || "#C5A44E";
+              const total = (club._count?.posts || 0) + (club._count?.projects || 0);
+              return (
+                <Link key={club.id} href={`/clubs/${club.slug}/dashboard`}>
+                  <Card className="group cursor-pointer transition-all hover:shadow-md hover:border-bryant-gold/40">
+                    <div className="h-1 rounded-t-xl" style={{ backgroundColor: accentColor }} />
+                    <CardContent className="flex items-center gap-4 py-4">
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                        style={{ backgroundColor: `${accentColor}20` }}
                       >
-                        View Club &rarr;
-                      </Link>
+                        <Building2 className="h-5 w-5" style={{ color: accentColor }} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-bryant-black group-hover:text-bryant-gold transition-colors">
+                            {club.name}
+                          </h3>
+                          {club.domain && <Badge variant="sport">{club.domain}</Badge>}
+                        </div>
+                        <div className="mt-1 flex items-center gap-4 text-xs text-bryant-gray-400">
+                          <span>{club._count?.memberships || 0} members</span>
+                          <span>{club._count?.posts || 0} posts</span>
+                          <span>{club._count?.projects || 0} projects</span>
+                          <span>{club._count?.events || 0} events</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-bryant-gold">{total}</p>
+                        <p className="text-[10px] text-bryant-gray-400">this week</p>
+                      </div>
                     </CardContent>
                   </Card>
-                );
-              })
-            )}
+                </Link>
+              );
+            })}
           </div>
+        )}
+
+        {/* Download CTA */}
+        <div className="mt-10 rounded-xl bg-gradient-to-r from-[#1a1a2e] to-[#16213e] p-8 text-center">
+          <FileText className="mx-auto mb-4 h-10 w-10 text-bryant-gold" />
+          <h3 className="text-xl font-bold text-white">Get the Full Report</h3>
+          <p className="mt-2 text-sm text-white/60">
+            Download a professionally formatted PDF with club highlights, new projects, upcoming events, and AI recommendations.
+          </p>
+          <Button onClick={handleDownload} loading={downloading} size="lg" className="mt-6">
+            <Download className="h-4 w-4" />
+            Download Weekly PDF Report
+          </Button>
         </div>
       </div>
     </div>
