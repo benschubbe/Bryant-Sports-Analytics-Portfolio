@@ -12,18 +12,19 @@ import {
   Plus,
   FileText,
   CalendarDays,
-  Activity,
   Trophy,
   UserPlus,
   CheckCircle2,
   Crown,
   Shield,
+  Link2,
+  Share2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DemoBox } from "@/components/club/demo-box";
-import { getInitials } from "@/lib/utils";
+import { getInitials, timeAgo } from "@/lib/utils";
 
 interface ClubStats {
   memberCount: number;
@@ -42,6 +43,14 @@ interface LeaderboardEntry {
   engagementScore: number;
 }
 
+interface RecentPost {
+  id: string;
+  content: string;
+  createdAt: string;
+  author?: { name?: string | null; image?: string | null };
+  _count?: { comments: number };
+}
+
 export default function ClubDashboardPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -55,18 +64,21 @@ export default function ClubDashboardPage() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
+  const [recentPosts, setRecentPosts] = useState<RecentPost[]>([]);
   const [isMember, setIsMember] = useState<boolean | null>(null);
   const [memberRole, setMemberRole] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [joinError, setJoinError] = useState("");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
-      const [statsRes, leaderboardRes, membersRes] = await Promise.allSettled([
+      const [statsRes, leaderboardRes, membersRes, postsRes] = await Promise.allSettled([
         fetch(`/api/clubs/${slug}/stats`),
         fetch(`/api/clubs/${slug}/leaderboard`),
         session?.user ? fetch(`/api/clubs/${slug}/members`) : Promise.resolve(null),
+        fetch(`/api/clubs/${slug}/posts`),
       ]);
 
       if (statsRes.status === "fulfilled" && statsRes.value?.ok) {
@@ -78,6 +90,11 @@ export default function ClubDashboardPage() {
         setLeaderboard(await leaderboardRes.value.json());
       }
       setLoadingLeaderboard(false);
+
+      if (postsRes.status === "fulfilled" && postsRes.value?.ok) {
+        const allPosts = await postsRes.value.json();
+        setRecentPosts(Array.isArray(allPosts) ? allPosts.slice(0, 3) : []);
+      }
 
       // Check if current user is a member and get their role
       if (session?.user?.id && membersRes.status === "fulfilled" && membersRes.value?.ok) {
@@ -147,49 +164,74 @@ export default function ClubDashboardPage() {
     }
   }
 
+  function handleCopyInvite() {
+    const url = `${window.location.origin}/clubs/${slug}/dashboard`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   const roleIcon = (role: string) => {
     if (role === "PRESIDENT") return <Crown className="h-3.5 w-3.5 text-bryant-gold" />;
     if (role === "OFFICER") return <Shield className="h-3.5 w-3.5 text-blue-500" />;
     return null;
   };
 
+  // Find current user rank
+  const myRank = session?.user?.id
+    ? leaderboard.findIndex((e) => e.userId === session.user.id) + 1
+    : 0;
+
   return (
     <div className="space-y-6">
-      {/* Welcome Header + Join Button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-bryant-gray-900">
-            Welcome to {clubName}
-          </h1>
-          <p className="text-sm text-bryant-gray-500">
-            Your club dashboard at a glance
-          </p>
-        </div>
-        {isMember === false && (
-          <Button onClick={handleJoin} loading={joining} size="lg">
-            <UserPlus className="h-4 w-4" />
-            Join Club
-          </Button>
-        )}
-        {isMember === true && (
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-green-600">
-              <CheckCircle2 className="h-4 w-4" />
-              Member
+
+      {/* ── Welcome Banner ── */}
+      <div className="rounded-2xl bg-gradient-to-br from-bryant-black via-bryant-gray-800 to-bryant-black px-8 py-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white">{clubName}</h1>
+            <div className="mt-2 flex items-center gap-4 text-sm text-white/60">
+              <span className="flex items-center gap-1.5">
+                <Users className="h-4 w-4" />
+                {loadingStats ? "..." : stats?.memberCount ?? 0} members
+              </span>
+              {myRank > 0 && (
+                <span className="flex items-center gap-1.5 text-bryant-gold font-medium">
+                  <Trophy className="h-4 w-4" />
+                  You&apos;re ranked #{myRank}
+                </span>
+              )}
             </div>
-            {memberRole !== "PRESIDENT" && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-red-300 text-red-600 hover:bg-red-50"
-                onClick={handleLeave}
-                loading={leaving}
-              >
-                Leave Club
+          </div>
+          <div className="flex items-center gap-3">
+            {isMember === false && (
+              <Button onClick={handleJoin} loading={joining} size="lg">
+                <UserPlus className="h-4 w-4" />
+                Join Club
               </Button>
             )}
+            {isMember === true && (
+              <>
+                <div className="flex items-center gap-2 text-sm text-green-400">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Member
+                </div>
+                {memberRole !== "PRESIDENT" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-red-400/40 text-red-400 hover:bg-red-900/20"
+                    onClick={handleLeave}
+                    loading={leaving}
+                  >
+                    Leave
+                  </Button>
+                )}
+              </>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Join error */}
@@ -199,7 +241,80 @@ export default function ClubDashboardPage() {
         </div>
       )}
 
-      {/* Stats Row */}
+      {/* ── Leaderboard Strip (Top 5) ── */}
+      <Card>
+        <CardContent className="py-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Trophy className="h-5 w-5 text-bryant-gold" />
+            <h2 className="text-lg font-semibold text-bryant-gray-900">Leaderboard</h2>
+          </div>
+          {loadingLeaderboard ? (
+            <div className="py-4 text-center text-bryant-gray-400">Loading...</div>
+          ) : leaderboard.length === 0 ? (
+            <p className="py-4 text-center text-sm text-bryant-gray-400">
+              Member engagement scores will appear here as members post and create projects.
+            </p>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {leaderboard.slice(0, 5).map((entry, idx) => {
+                const isMe = session?.user?.id === entry.userId;
+                return (
+                  <div
+                    key={entry.userId}
+                    className={`flex flex-col items-center gap-2 rounded-xl px-5 py-4 min-w-[120px] flex-shrink-0 transition-colors ${
+                      isMe
+                        ? "bg-bryant-gold/10 ring-2 ring-bryant-gold"
+                        : idx === 0
+                          ? "bg-bryant-gold/5 ring-1 ring-bryant-gold/20"
+                          : "bg-bryant-gray-50"
+                    }`}
+                  >
+                    <div className="relative">
+                      {entry.image ? (
+                        <img
+                          src={entry.image}
+                          alt={entry.name}
+                          className={`h-12 w-12 rounded-full object-cover ${isMe ? "ring-2 ring-bryant-gold" : ""}`}
+                        />
+                      ) : (
+                        <div
+                          className={`flex h-12 w-12 items-center justify-center rounded-full bg-bryant-gray-200 text-sm font-semibold text-bryant-gray-600 ${
+                            isMe ? "ring-2 ring-bryant-gold" : ""
+                          }`}
+                        >
+                          {getInitials(entry.name)}
+                        </div>
+                      )}
+                      <span
+                        className={`absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                          idx === 0
+                            ? "bg-bryant-gold text-white"
+                            : idx === 1
+                              ? "bg-bryant-gray-300 text-white"
+                              : idx === 2
+                                ? "bg-amber-600 text-white"
+                                : "bg-bryant-gray-100 text-bryant-gray-500"
+                        }`}
+                      >
+                        {idx + 1}
+                      </span>
+                    </div>
+                    <span className="text-xs font-medium text-bryant-gray-900 text-center truncate w-full">
+                      {entry.name}
+                    </span>
+                    <span className="text-sm font-bold text-bryant-gold">{entry.engagementScore} pts</span>
+                    <div className="flex items-center gap-1">
+                      {roleIcon(entry.role)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Stats Row ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Members", value: stats?.memberCount, icon: Users, bg: "from-blue-50 to-indigo-50", iconColor: "text-blue-500" },
@@ -224,81 +339,63 @@ export default function ClubDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Leaderboard */}
+
+        {/* ── Recent Activity ── */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-bryant-gold" />
-              <h2 className="text-lg font-semibold text-bryant-gray-900">Member Leaderboard</h2>
+              <MessageSquare className="h-5 w-5 text-green-500" />
+              <h2 className="text-lg font-semibold text-bryant-gray-900">Recent Activity</h2>
             </div>
           </CardHeader>
           <CardContent>
-            {loadingLeaderboard ? (
-              <div className="py-6 text-center text-bryant-gray-400">Loading...</div>
-            ) : leaderboard.length === 0 ? (
-              <DemoBox
-                title="No activity yet"
-                description="Member engagement scores will appear here as members post and create projects."
-                icon={Trophy}
-              />
-            ) : (
+            {recentPosts.length > 0 ? (
               <div className="space-y-3">
-                {leaderboard.slice(0, 10).map((entry, idx) => (
+                {recentPosts.map((post) => (
                   <div
-                    key={entry.userId}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors duration-150 hover:bg-bryant-gray-50 ${
-                      idx === 0 ? "bg-bryant-gold/5 ring-1 ring-bryant-gold/10" : ""
-                    }`}
+                    key={post.id}
+                    className="rounded-xl border border-bryant-gray-100 px-4 py-3 transition-colors hover:bg-bryant-gray-50"
                   >
-                    {/* Rank */}
-                    <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                        idx === 0
-                          ? "bg-bryant-gold text-white"
-                          : idx === 1
-                            ? "bg-bryant-gray-300 text-white"
-                            : idx === 2
-                              ? "bg-amber-600 text-white"
-                              : "bg-bryant-gray-100 text-bryant-gray-500"
-                      }`}
-                    >
-                      {idx + 1}
-                    </span>
-
-                    {/* Avatar */}
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bryant-gray-200 text-xs font-semibold text-bryant-gray-600">
-                      {getInitials(entry.name)}
-                    </div>
-
-                    {/* Name + role */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-medium text-bryant-gray-900 truncate">
-                          {entry.name}
-                        </span>
-                        {roleIcon(entry.role)}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-bryant-gray-400">
-                        <span>{entry.postCount} posts</span>
-                        <span>{entry.projectCount} projects</span>
-                      </div>
-                    </div>
-
-                    {/* Score */}
-                    <div className="text-right">
-                      <span className="text-sm font-bold text-bryant-gold">
-                        {entry.engagementScore}
+                    <div className="flex items-center gap-2 mb-1.5">
+                      {post.author?.image ? (
+                        <img src={post.author.image} alt={post.author.name || ""} className="h-6 w-6 rounded-full object-cover" />
+                      ) : (
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-bryant-gray-200 text-[10px] font-semibold text-bryant-gray-600">
+                          {getInitials(post.author?.name || "?")}
+                        </div>
+                      )}
+                      <span className="text-xs font-medium text-bryant-gray-900">
+                        {post.author?.name || "Member"}
                       </span>
-                      <p className="text-[10px] text-bryant-gray-400">pts</p>
+                      <span className="text-xs text-bryant-gray-400">
+                        {timeAgo(new Date(post.createdAt))}
+                      </span>
                     </div>
+                    <p className="text-sm text-bryant-gray-700 line-clamp-2">{post.content}</p>
+                    {post._count?.comments ? (
+                      <p className="mt-1 text-xs text-bryant-gray-400">
+                        {post._count.comments} comment{post._count.comments !== 1 ? "s" : ""}
+                      </p>
+                    ) : null}
                   </div>
                 ))}
+                <Link href={`/clubs/${slug}/feed`} className="block text-center">
+                  <span className="text-xs font-medium text-bryant-gold hover:underline">
+                    View all posts &rarr;
+                  </span>
+                </Link>
               </div>
+            ) : (
+              <DemoBox
+                title="No posts yet"
+                description="Start the conversation! Share updates, insights, and discussions with your club."
+                icon={MessageSquare}
+              />
             )}
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
+        {/* ── Quick Actions ── */}
         <Card>
           <CardHeader>
             <h2 className="text-lg font-semibold text-bryant-gray-900">Quick Actions</h2>
@@ -328,6 +425,14 @@ export default function ClubDashboardPage() {
                 View Members
               </Button>
             </Link>
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3 py-3 hover:border-bryant-gold/40 hover:bg-bryant-gold/5"
+              onClick={handleCopyInvite}
+            >
+              <Share2 className="h-4 w-4 text-bryant-gold" />
+              {copied ? "Link Copied!" : "Invite Friends"}
+            </Button>
           </CardContent>
         </Card>
       </div>

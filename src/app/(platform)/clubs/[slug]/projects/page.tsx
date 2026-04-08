@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Layers, Plus, Code, ExternalLink } from "lucide-react";
+import { Layers, Plus, Code, ExternalLink, Eye, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { DemoBox } from "@/components/club/demo-box";
+import { getInitials, timeAgo } from "@/lib/utils";
 
 interface Project {
   id: string;
@@ -17,15 +18,20 @@ interface Project {
   abstract?: string | null;
   content?: string | null;
   tools?: string | null;
+  views?: number;
   githubUrl?: string | null;
   tableauUrl?: string | null;
-  author?: { name?: string | null };
+  author?: { name?: string | null; image?: string | null };
   createdAt?: string;
 }
 
 export default function ClubProjectsPage() {
   const params = useParams();
   const slug = params.slug as string;
+  const clubName = slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 
   const [showForm, setShowForm] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -103,6 +109,16 @@ export default function ClubProjectsPage() {
     }
     return [];
   }
+
+  // Alternating accent colors for tool badges
+  const toolColors = [
+    "bg-blue-100 text-blue-700",
+    "bg-green-100 text-green-700",
+    "bg-purple-100 text-purple-700",
+    "bg-amber-100 text-amber-700",
+    "bg-rose-100 text-rose-700",
+    "bg-teal-100 text-teal-700",
+  ];
 
   if (fetchLoading) {
     return (
@@ -193,46 +209,105 @@ export default function ClubProjectsPage() {
         </form>
       </Modal>
 
-      {/* Projects list */}
+      {/* Projects Grid */}
       {projects.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {projects.map((project) => (
-            <Card key={project.id}>
-              <CardContent>
-                <h3 className="text-sm font-semibold text-bryant-gray-900 mb-1">{project.title}</h3>
-                {project.abstract && (
-                  <p className="text-sm text-bryant-gray-600 line-clamp-2 mb-2">{project.abstract}</p>
-                )}
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {parseTools(project.tools).map((tool) => (
-                    <Badge key={tool} variant="tool">{tool}</Badge>
-                  ))}
-                </div>
-                <div className="flex items-center gap-3 text-xs text-bryant-gray-500">
-                  {project.author?.name && <span>by {project.author.name}</span>}
-                  {project.githubUrl && (
-                    <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-bryant-gold hover:underline">
-                      <Code className="h-3.5 w-3.5" />
-                      GitHub
-                    </a>
+        <div className="grid gap-5 sm:grid-cols-2">
+          {projects.map((project) => {
+            const tools = parseTools(project.tools);
+            return (
+              <Card key={project.id} className="group overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-bryant-gold/40">
+                {/* Gold accent bar */}
+                <div className="h-1 bg-gradient-to-r from-bryant-gold to-amber-400" />
+                <CardContent className="py-5">
+                  {/* Title */}
+                  <h3 className="text-lg font-bold text-bryant-gray-900 mb-2 group-hover:text-bryant-gold transition-colors">
+                    {project.title}
+                  </h3>
+
+                  {/* Abstract preview */}
+                  {project.abstract && (
+                    <p className="text-sm text-bryant-gray-600 line-clamp-3 mb-4 leading-relaxed">
+                      {project.abstract}
+                    </p>
                   )}
-                  {project.tableauUrl && (
-                    <a href={project.tableauUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-bryant-gold hover:underline">
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      Tableau
-                    </a>
+
+                  {/* Author */}
+                  <div className="flex items-center gap-2 mb-3">
+                    {project.author?.image ? (
+                      <img
+                        src={project.author.image}
+                        alt={project.author.name || ""}
+                        className="h-6 w-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-bryant-gray-200 text-[10px] font-semibold text-bryant-gray-600">
+                        {getInitials(project.author?.name || "?")}
+                      </div>
+                    )}
+                    <span className="text-xs font-medium text-bryant-gray-700">
+                      {project.author?.name || "Unknown"}
+                    </span>
+                    {project.createdAt && (
+                      <span className="text-xs text-bryant-gray-400">
+                        &middot; {timeAgo(new Date(project.createdAt))}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Tools as colored badges */}
+                  {tools.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {tools.map((tool, i) => (
+                        <span
+                          key={tool}
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${toolColors[i % toolColors.length]}`}
+                        >
+                          {tool}
+                        </span>
+                      ))}
+                    </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+
+                  {/* Footer: views + links */}
+                  <div className="flex items-center justify-between border-t border-bryant-gray-100 pt-3">
+                    <div className="flex items-center gap-1 text-xs text-bryant-gray-400">
+                      <Eye className="h-3.5 w-3.5" />
+                      {project.views ?? 0} views
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {project.githubUrl && (
+                        <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-bryant-gold hover:underline">
+                          <Code className="h-3.5 w-3.5" />
+                          GitHub
+                        </a>
+                      )}
+                      {project.tableauUrl && (
+                        <a href={project.tableauUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-bryant-gold hover:underline">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Tableau
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       ) : (
-        <DemoBox
-          title="No projects yet"
-          description="Club member projects will be showcased here. Add your first project to get started."
-          icon={Layers}
-        />
+        <div className="rounded-2xl border-2 border-dashed border-bryant-gray-200 py-16 text-center">
+          <Layers className="mx-auto h-12 w-12 text-bryant-gray-300 mb-4" />
+          <h3 className="text-lg font-semibold text-bryant-gray-700 mb-2">
+            Be the first to showcase your work in {clubName}
+          </h3>
+          <p className="text-sm text-bryant-gray-400 mb-6 max-w-md mx-auto">
+            Share your analytics projects, research, and visualizations with the club. Your work inspires others.
+          </p>
+          <Button variant="primary" onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4" />
+            Create First Project
+          </Button>
+        </div>
       )}
     </div>
   );

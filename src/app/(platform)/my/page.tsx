@@ -9,10 +9,14 @@ import {
   MessageSquare,
   Users,
   FolderOpen,
-  Calendar,
   ChevronRight,
   BarChart3,
   Briefcase,
+  Plus,
+  Search,
+  Eye,
+  Download,
+  Sparkles,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +44,7 @@ interface MyProject {
   slug: string;
   abstract: string | null;
   views: number;
+  tools?: string | null;
   createdAt: string;
   club: { name: string; slug: string; color: string | null } | null;
 }
@@ -133,6 +138,23 @@ export default function MyDashboardPage() {
   const totalClubs = clubs.length;
   const totalViews = projects.reduce((sum, p) => sum + (p.views || 0), 0);
 
+  // Impact Score: (projects x 3) + (posts x 1) + (clubs x 5)
+  const impactScore = totalProjects * 3 + totalPosts * 1 + totalClubs * 5;
+
+  function parseTools(tools: unknown): string[] {
+    if (!tools) return [];
+    if (Array.isArray(tools)) return tools;
+    if (typeof tools === "string") {
+      try {
+        const parsed = JSON.parse(tools);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return tools.split(",").map((t) => t.trim()).filter(Boolean);
+      }
+    }
+    return [];
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-bryant-gray-50">
@@ -147,132 +169,186 @@ export default function MyDashboardPage() {
   return (
     <div className="min-h-screen bg-bryant-gray-50">
       <div className="mx-auto max-w-5xl px-6 py-12">
-        {/* Profile header */}
-        <div className="mb-10 flex items-center gap-5 rounded-2xl bg-gradient-to-r from-bryant-black to-bryant-gray-800 px-8 py-8">
-          {session?.user?.image ? (
-            <img src={session.user.image} alt={userName} className="h-16 w-16 rounded-full object-cover ring-2 ring-bryant-gold/40" />
-          ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-bryant-gold/20 text-xl font-bold text-bryant-gold ring-2 ring-bryant-gold/40">
-              {initials}
+
+        {/* ── Profile Banner ── */}
+        <div className="mb-8 rounded-2xl bg-gradient-to-br from-bryant-black via-bryant-gray-800 to-bryant-black px-8 py-8">
+          <div className="flex items-center gap-5">
+            {session?.user?.image ? (
+              <img src={session.user.image} alt={userName} className="h-16 w-16 rounded-full object-cover ring-2 ring-bryant-gold/40" />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-bryant-gold/20 text-xl font-bold text-bryant-gold ring-2 ring-bryant-gold/40">
+                {initials}
+              </div>
+            )}
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-white">{userName}</h1>
+              <p className="text-sm text-white/60">
+                {session?.user?.email} · Member of {totalClubs} club{totalClubs !== 1 ? "s" : ""}
+              </p>
             </div>
-          )}
-          <div>
-            <h1 className="text-2xl font-bold text-white">{userName}</h1>
-            <p className="text-sm text-white/60">
-              {session?.user?.email} · Member of {totalClubs} club{totalClubs !== 1 ? "s" : ""}
-            </p>
+            <div className="text-right">
+              <p className="text-xs uppercase tracking-wider text-white/40">Your Impact Score</p>
+              <p className="text-4xl font-extrabold text-bryant-gold">{impactScore}</p>
+            </div>
           </div>
         </div>
 
-        {/* Stats cards */}
+        {/* ── This Week: Delta Cards ── */}
         <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {[
-            { label: "Clubs", value: totalClubs, icon: Building2, bg: "from-amber-50 to-orange-50" },
-            { label: "Projects", value: totalProjects, icon: Layers, bg: "from-blue-50 to-indigo-50" },
-            { label: "Posts", value: totalPosts, icon: MessageSquare, bg: "from-green-50 to-emerald-50" },
-            { label: "Project Views", value: totalViews, icon: BarChart3, bg: "from-purple-50 to-violet-50" },
-          ].map((stat) => (
-            <Card key={stat.label}>
-              <CardContent className={`flex items-center gap-3 py-4 bg-gradient-to-br ${stat.bg}`}>
+          <Card>
+            <CardContent className="py-5 bg-gradient-to-br from-amber-50 to-orange-50">
+              <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-sm">
-                  <stat.icon className="h-5 w-5 text-bryant-gold" />
+                  <Layers className="h-5 w-5 text-amber-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-bryant-black">{stat.value}</p>
-                  <p className="text-xs text-bryant-gray-500">{stat.label}</p>
+                  <p className="text-2xl font-bold text-bryant-black">{totalProjects}</p>
+                  <p className="text-xs text-bryant-gray-500">Projects</p>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* My Applications link */}
-        <div className="mb-8">
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="py-5 bg-gradient-to-br from-green-50 to-emerald-50">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-sm">
+                  <MessageSquare className="h-5 w-5 text-green-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-bryant-black">{totalPosts}</p>
+                  <p className="text-xs text-bryant-gray-500">Posts</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="py-5 bg-gradient-to-br from-purple-50 to-violet-50">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-sm">
+                  <Eye className="h-5 w-5 text-purple-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-bryant-black">{totalViews > 0 ? totalViews : "\u2014"}</p>
+                  <p className="text-xs text-bryant-gray-500">Profile Views</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           <Link href="/my/applications">
-            <Card className="group cursor-pointer transition-all hover:shadow-md hover:border-bryant-gold/40">
-              <CardContent className="flex items-center gap-4 py-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-bryant-gold/10">
-                  <Briefcase className="h-5 w-5 text-bryant-gold" />
+            <Card className="group cursor-pointer transition-all hover:shadow-md hover:border-bryant-gold/40 h-full">
+              <CardContent className="py-5 bg-gradient-to-br from-blue-50 to-indigo-50 h-full">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-sm">
+                    <Briefcase className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-bryant-black">{applicationCount}</p>
+                    <p className="text-xs text-bryant-gray-500 group-hover:text-bryant-gold transition-colors">Applications &rarr;</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-bryant-black group-hover:text-bryant-gold transition-colors">
-                    My Applications
-                  </h3>
-                  <p className="text-xs text-bryant-gray-500">
-                    Track your job applications and interview progress
-                  </p>
-                </div>
-                {applicationCount > 0 && (
-                  <Badge variant="sport">{applicationCount}</Badge>
-                )}
-                <ChevronRight className="h-4 w-4 text-bryant-gray-300 group-hover:text-bryant-gold transition-colors" />
               </CardContent>
             </Card>
           </Link>
         </div>
 
-        <div className="space-y-8">
-          {/* My Clubs */}
+        {/* ── Quick Actions Row ── */}
+        <div className="mb-8 flex flex-wrap items-center gap-3">
+          {clubs.length > 0 && (
+            <Link href={`/clubs/${clubs[0].club.slug}/projects`}>
+              <Button variant="outline" size="sm" className="gap-2 hover:border-bryant-gold/40 hover:bg-bryant-gold/5">
+                <Plus className="h-4 w-4 text-bryant-gold" />
+                Create Project
+              </Button>
+            </Link>
+          )}
+          <Link href="/jobs">
+            <Button variant="outline" size="sm" className="gap-2 hover:border-bryant-gold/40 hover:bg-bryant-gold/5">
+              <Briefcase className="h-4 w-4 text-bryant-gold" />
+              Browse Jobs
+            </Button>
+          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 hover:border-bryant-gold/40 hover:bg-bryant-gold/5"
+            onClick={handleAutoMatch}
+            disabled={autoMatchLoading}
+          >
+            <Sparkles className="h-4 w-4 text-bryant-gold" />
+            {autoMatchLoading ? "Matching..." : "Find Clubs for Me"}
+          </Button>
+          <Link href="/clubs">
+            <Button variant="outline" size="sm" className="gap-2 hover:border-bryant-gold/40 hover:bg-bryant-gold/5">
+              <Search className="h-4 w-4 text-bryant-gold" />
+              Browse Clubs
+            </Button>
+          </Link>
+          <Button variant="outline" size="sm" className="gap-2 cursor-default opacity-50" disabled>
+            <Download className="h-4 w-4 text-bryant-gray-400" />
+            Download Resume
+          </Button>
+        </div>
+
+        {autoMatchResult && (
+          <div className="mb-6 rounded-lg border border-bryant-gold/30 bg-bryant-gold/10 px-4 py-3 text-sm text-bryant-black">
+            {autoMatchResult}
+          </div>
+        )}
+
+        <div className="space-y-10">
+
+          {/* ── My Clubs ── */}
           <section>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-bryant-black">My Clubs</h2>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAutoMatch}
-                  disabled={autoMatchLoading}
-                >
-                  {autoMatchLoading ? "Matching..." : "Find Clubs for Me"}
-                </Button>
-                <Link href="/clubs">
-                  <Button variant="outline" size="sm">Browse Clubs</Button>
-                </Link>
-              </div>
-            </div>
-            {autoMatchResult && (
-              <div className="mb-3 rounded-lg border border-bryant-gold/30 bg-bryant-gold/10 px-4 py-3 text-sm text-bryant-black">
-                {autoMatchResult}
-              </div>
-            )}
+            <h2 className="mb-4 text-lg font-semibold text-bryant-black">My Clubs</h2>
             {clubs.length > 0 ? (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 {clubs.map((m) => (
                   <Link key={m.id} href={`/clubs/${m.club.slug}/dashboard`}>
                     <Card className="group cursor-pointer transition-all hover:shadow-md hover:border-bryant-gold/40">
                       <div
-                        className="h-1 rounded-t-xl"
+                        className="h-1.5 rounded-t-xl"
                         style={{ backgroundColor: m.club.color || "#C5A44E" }}
                       />
-                      <CardContent className="flex items-center gap-3 py-4">
-                        <div
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-                          style={{ backgroundColor: `${m.club.color || "#C5A44E"}20` }}
-                        >
-                          <Building2
-                            className="h-5 w-5"
-                            style={{ color: m.club.color || "#C5A44E" }}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-semibold text-bryant-black group-hover:text-bryant-gold transition-colors truncate">
-                            {m.club.name}
-                          </h3>
-                          <div className="flex items-center gap-2 text-xs text-bryant-gray-400">
-                            <Badge variant={m.role === "PRESIDENT" ? "success" : m.role === "OFFICER" ? "warning" : "sport"}>
+                      <CardContent className="py-5">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                            style={{ backgroundColor: `${m.club.color || "#C5A44E"}20` }}
+                          >
+                            <Building2
+                              className="h-5 w-5"
+                              style={{ color: m.club.color || "#C5A44E" }}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-semibold text-bryant-black group-hover:text-bryant-gold transition-colors truncate">
+                              {m.club.name}
+                            </h3>
+                            <Badge variant={m.role === "PRESIDENT" ? "success" : m.role === "OFFICER" ? "warning" : "sport"} className="mt-0.5">
                               {m.role}
                             </Badge>
-                            <span className="flex items-center gap-1">
-                              <Users className="h-3 w-3" />
-                              {m.club._count.memberships}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <FolderOpen className="h-3 w-3" />
-                              {m.club._count.projects}
-                            </span>
                           </div>
+                          <ChevronRight className="h-4 w-4 text-bryant-gray-300 group-hover:text-bryant-gold transition-colors" />
                         </div>
-                        <ChevronRight className="h-4 w-4 text-bryant-gray-300 group-hover:text-bryant-gold transition-colors" />
+                        <div className="flex items-center gap-4 text-xs text-bryant-gray-400">
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {m.club._count.memberships} members
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <FolderOpen className="h-3 w-3" />
+                            {m.club._count.projects} projects
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageSquare className="h-3 w-3" />
+                            {m.club._count.posts} posts
+                          </span>
+                        </div>
+                        <div className="mt-3">
+                          <span className="text-xs font-medium text-bryant-gold group-hover:underline">
+                            View Club &rarr;
+                          </span>
+                        </div>
                       </CardContent>
                     </Card>
                   </Link>
@@ -287,24 +363,41 @@ export default function MyDashboardPage() {
             )}
           </section>
 
-          {/* My Projects */}
+          {/* ── My Projects ── */}
           <section>
             <h2 className="mb-4 text-lg font-semibold text-bryant-black">My Projects</h2>
             {projects.length > 0 ? (
-              <div className="space-y-3">
+              <div className="grid gap-4 sm:grid-cols-2">
                 {projects.slice(0, 10).map((project) => (
-                  <Card key={project.id}>
-                    <CardContent className="flex items-center gap-4 py-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-bryant-gray-100">
-                        <Layers className="h-5 w-5 text-bryant-gray-500" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-bryant-black truncate">{project.title}</h3>
-                        <div className="flex items-center gap-3 text-xs text-bryant-gray-400">
+                  <Card key={project.id} className="group transition-all hover:shadow-md hover:border-bryant-gold/40">
+                    <CardContent className="py-5">
+                      <h3 className="text-base font-semibold text-bryant-black mb-2 group-hover:text-bryant-gold transition-colors">
+                        {project.title}
+                      </h3>
+                      {project.abstract && (
+                        <p className="text-sm text-bryant-gray-500 line-clamp-3 mb-3">
+                          {project.abstract}
+                        </p>
+                      )}
+                      {parseTools(project.tools).length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {parseTools(project.tools).map((tool) => (
+                            <span
+                              key={tool}
+                              className="inline-flex items-center rounded-full bg-bryant-gold/10 px-2.5 py-0.5 text-xs font-medium text-bryant-gold"
+                            >
+                              {tool}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between text-xs text-bryant-gray-400">
+                        <div className="flex items-center gap-3">
                           {project.club && (
                             <Link
                               href={`/clubs/${project.club.slug}/projects`}
                               className="flex items-center gap-1 hover:text-bryant-gold"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <span
                                 className="inline-block h-2 w-2 rounded-full"
@@ -313,15 +406,13 @@ export default function MyDashboardPage() {
                               {project.club.name}
                             </Link>
                           )}
-                          <span>{project.views} views</span>
                           <span>{timeAgo(new Date(project.createdAt))}</span>
                         </div>
+                        <span className="flex items-center gap-1">
+                          <BarChart3 className="h-3 w-3" />
+                          {project.views} views
+                        </span>
                       </div>
-                      {project.abstract && (
-                        <p className="hidden text-sm text-bryant-gray-500 line-clamp-1 lg:block max-w-xs">
-                          {project.abstract}
-                        </p>
-                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -331,50 +422,6 @@ export default function MyDashboardPage() {
                 title="No projects yet"
                 description="Create a project in any of your clubs to see it tracked here."
                 icon={Layers}
-              />
-            )}
-          </section>
-
-          {/* My Posts */}
-          <section>
-            <h2 className="mb-4 text-lg font-semibold text-bryant-black">My Posts</h2>
-            {posts.length > 0 ? (
-              <div className="space-y-3">
-                {posts.slice(0, 10).map((post) => (
-                  <Card key={post.id}>
-                    <CardContent className="py-4">
-                      <div className="flex items-start gap-3">
-                        <div
-                          className="mt-1 h-2 w-2 shrink-0 rounded-full"
-                          style={{ backgroundColor: post.club?.color || "#C5A44E" }}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm text-bryant-black line-clamp-2">{post.content}</p>
-                          <div className="mt-1 flex items-center gap-3 text-xs text-bryant-gray-400">
-                            {post.club && (
-                              <Link
-                                href={`/clubs/${post.club.slug}/feed`}
-                                className="hover:text-bryant-gold"
-                              >
-                                {post.club.name}
-                              </Link>
-                            )}
-                            <span>{timeAgo(new Date(post.createdAt))}</span>
-                            {post._count?.comments ? (
-                              <span>{post._count.comments} comments</span>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <DemoBox
-                title="No posts yet"
-                description="Post in any club's feed to see your activity here."
-                icon={MessageSquare}
               />
             )}
           </section>
