@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
@@ -11,20 +12,19 @@ export async function GET(req: NextRequest) {
     const remote = searchParams.get("remote");
     const search = searchParams.get("search");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
+    const where: Prisma.JobWhereInput = {};
 
     if (roleType) where.roleType = roleType;
-    if (sport) where.sport = { contains: sport, mode: "insensitive" };
+    if (sport) where.sport = { contains: sport };
     if (experienceLevel) where.experienceLevel = experienceLevel;
     if (remote !== null && remote !== undefined) {
       where.remote = remote === "true";
     }
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { company: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
+        { title: { contains: search } },
+        { company: { contains: search } },
+        { description: { contains: search } },
       ];
     }
 
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     console.error("Jobs GET error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -50,11 +50,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only ALUMNI or ADMIN can create job listings
     if (session.user.role !== "ALUMNI" && session.user.role !== "ADMIN") {
       return NextResponse.json(
         { error: "Only alumni and admins can post job listings" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -75,7 +74,7 @@ export async function POST(req: NextRequest) {
     if (!title || !company || !description || !roleType || !experienceLevel) {
       return NextResponse.json(
         { error: "title, company, description, roleType, and experienceLevel are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -101,7 +100,7 @@ export async function POST(req: NextRequest) {
     console.error("Jobs POST error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

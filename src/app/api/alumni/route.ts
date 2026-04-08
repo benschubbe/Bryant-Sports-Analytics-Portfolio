@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
@@ -7,19 +8,17 @@ export async function GET(req: NextRequest) {
     const sport = searchParams.get("sport");
     const search = searchParams.get("search");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.UserWhereInput = {
       role: "ALUMNI",
     };
 
-    // Build filters for sport (search in bio or headline) and search
-    const andConditions = [];
+    const andConditions: Prisma.UserWhereInput[] = [];
 
     if (sport) {
       andConditions.push({
         OR: [
-          { bio: { contains: sport, mode: "insensitive" as const } },
-          { headline: { contains: sport, mode: "insensitive" as const } },
+          { bio: { contains: sport } },
+          { headline: { contains: sport } },
         ],
       });
     }
@@ -27,9 +26,9 @@ export async function GET(req: NextRequest) {
     if (search) {
       andConditions.push({
         OR: [
-          { name: { contains: search, mode: "insensitive" as const } },
-          { headline: { contains: search, mode: "insensitive" as const } },
-          { bio: { contains: search, mode: "insensitive" as const } },
+          { name: { contains: search } },
+          { headline: { contains: search } },
+          { bio: { contains: search } },
         ],
       });
     }
@@ -60,7 +59,7 @@ export async function GET(req: NextRequest) {
     console.error("Alumni GET error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

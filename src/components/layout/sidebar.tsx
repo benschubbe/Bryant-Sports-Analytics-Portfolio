@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { getInitials } from "@/lib/utils";
 import {
   BarChart3,
   FolderOpen,
@@ -85,17 +87,24 @@ const navSections: NavSection[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+
+  const userName = session?.user?.name || "User";
+  const userRole = session?.user?.role || "STUDENT";
+  const initials = getInitials(userName);
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col bg-bryant-black text-white">
       {/* Logo / Wordmark */}
       <div className="px-6 pt-6 pb-4">
-        <div className="mb-2 h-1 w-10 rounded-full bg-bryant-gold" />
-        <h1 className="text-lg font-bold tracking-tight">
-          Bryant Sports
-          <br />
-          <span className="text-bryant-gold">Analytics Hub</span>
-        </h1>
+        <Link href="/dashboard">
+          <div className="mb-2 h-1 w-10 rounded-full bg-bryant-gold" />
+          <h1 className="text-lg font-bold tracking-tight">
+            Bryant Sports
+            <br />
+            <span className="text-bryant-gold">Analytics Hub</span>
+          </h1>
+        </Link>
       </div>
 
       {/* Navigation */}
@@ -134,12 +143,12 @@ export function Sidebar() {
       <div className="border-t border-white/10 p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-bryant-gold/20 text-sm font-semibold text-bryant-gold">
-            BS
+            {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">Ben Schubbe</p>
-            <span className="inline-block rounded-full bg-bryant-gold/10 px-2 py-0.5 text-[10px] font-medium text-bryant-gold">
-              Analyst
+            <p className="truncate text-sm font-medium">{userName}</p>
+            <span className="inline-block rounded-full bg-bryant-gold/10 px-2 py-0.5 text-[10px] font-medium capitalize text-bryant-gold">
+              {userRole.toLowerCase()}
             </span>
           </div>
           <Link

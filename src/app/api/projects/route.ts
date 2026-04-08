@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
@@ -20,28 +21,27 @@ export async function GET(req: NextRequest) {
       visibilityFilter.push("BRYANT_ONLY");
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.ProjectWhereInput = {
       visibility: visibility
         ? { equals: visibility }
         : { in: visibilityFilter },
     };
 
     if (sport) {
-      where.sport = { has: sport };
+      where.sport = { contains: sport };
     }
     if (technique) {
-      where.technique = { has: technique };
+      where.technique = { contains: technique };
     }
     if (tool) {
-      where.tools = { has: tool };
+      where.tools = { contains: tool };
     }
     if (search) {
-      where.title = { contains: search, mode: "insensitive" };
+      where.title = { contains: search };
     }
 
     // Build ordering
-    let orderBy: Record<string, string> = { createdAt: "desc" };
+    let orderBy: Prisma.ProjectOrderByWithRelationInput = { createdAt: "desc" };
     if (sort === "views") {
       orderBy = { views: "desc" };
     }
@@ -79,11 +79,11 @@ export async function GET(req: NextRequest) {
                       r.codeQualityScore +
                       r.rigorScore) /
                       5,
-                  0
+                  0,
                 ) / reviews.length
               : 0;
           return { ...p, avgRating: avg };
-        })
+        }),
       );
       projectsWithRating.sort((a, b) => b.avgRating - a.avgRating);
       return NextResponse.json(projectsWithRating);
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
     console.error("Projects GET error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
     if (!title) {
       return NextResponse.json(
         { error: "Title is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -151,10 +151,10 @@ export async function POST(req: NextRequest) {
         abstract,
         content,
         methodology,
-        sport: sport || [],
-        technique: technique || [],
-        tools: tools || [],
-        domain: domain || [],
+        sport: JSON.stringify(sport || []),
+        technique: JSON.stringify(technique || []),
+        tools: JSON.stringify(tools || []),
+        domain: JSON.stringify(domain || []),
         visibility: visibility || "PUBLIC",
         githubUrl,
         tableauUrl,
@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
     console.error("Projects POST error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,28 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-
-// Accepted .edu domains — add more as needed
-const ALLOWED_DOMAINS = [
-  "bryant.edu",
-  "bu.edu",
-  "bc.edu",
-  "uri.edu",
-  "uconn.edu",
-  "northeastern.edu",
-  "suffolk.edu",
-  "bentley.edu",
-  "babson.edu",
-  "rit.edu",
-  "wpi.edu",
-];
-
-function isValidEduEmail(email: string): boolean {
-  const domain = email.split("@")[1]?.toLowerCase();
-  if (!domain) return false;
-  // Accept any .edu address
-  if (domain.endsWith(".edu")) return true;
-  return ALLOWED_DOMAINS.includes(domain);
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,17 +38,6 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Validate .edu email
-    if (!isValidEduEmail(normalizedEmail)) {
-      return NextResponse.json(
-        {
-          error:
-            "Please use a valid university .edu email address (e.g. you@bryant.edu).",
-        },
-        { status: 400 },
-      );
-    }
-
     // Check for existing account
     const existing = await prisma.user.findUnique({
       where: { email: normalizedEmail },
@@ -86,12 +53,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create the user
+    // Hash password and create the user
+    const passwordHash = await bcrypt.hash(password, 12);
+
     const user = await prisma.user.create({
       data: {
         name: name.trim(),
         email: normalizedEmail,
-        passwordHash: password,
+        passwordHash,
         classYear: classYear || null,
         concentration: concentration || null,
         role: "STUDENT",
