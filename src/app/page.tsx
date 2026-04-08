@@ -43,8 +43,13 @@ export default function LandingPage() {
       {/* Navigation */}
       <header className="fixed top-0 z-50 w-full border-b border-white/10 bg-bryant-black/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <div className="h-1 w-8 rounded-full bg-bryant-gold" />
+          <div className="flex items-center gap-4">
+            {/* Bryant University Logo */}
+            <img
+              src="https://upload.wikimedia.org/wikipedia/en/thumb/e/e1/Bryant_University_seal.svg/1200px-Bryant_University_seal.svg.png"
+              alt="Bryant University"
+              className="h-9 w-9 rounded-full object-contain bg-white p-0.5"
+            />
             <span className="text-lg font-bold text-white">
               Fol<span className="text-bryant-gold">io</span>
             </span>
@@ -74,14 +79,16 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative min-h-screen overflow-hidden pt-16">
         {/* Background image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/hero-bg.jpg')" }}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/hero-bg.jpg"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
         />
         {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-black/55" />
         {/* Gold gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/70" />
 
         {/* Content */}
         <div className="relative z-10">
