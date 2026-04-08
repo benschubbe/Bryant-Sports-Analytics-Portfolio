@@ -34,7 +34,7 @@ function LoginForm() {
         setError("Invalid email or password. Please try again.");
       } else if (result?.ok) {
         const params = new URLSearchParams(window.location.search);
-        const callbackUrl = params.get("callbackUrl") || "/dashboard";
+        const callbackUrl = params.get("callbackUrl") || "/clubs";
         window.location.href = callbackUrl;
       } else {
         setError("Sign in failed. Please try again.");
