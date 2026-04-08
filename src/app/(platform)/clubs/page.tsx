@@ -20,6 +20,7 @@ import {
   Palette,
   Heart,
   Briefcase,
+  Rss,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -102,12 +103,20 @@ export default function ClubsDirectoryPage() {
               Discover and join clubs across campus
             </p>
           </div>
-          <Link href="/clubs/register">
-            <Button size="lg">
-              <Plus className="mr-2 h-4 w-4" />
-              Register a Club
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/campus-feed">
+              <Button variant="outline" size="lg">
+                <Rss className="mr-2 h-4 w-4" />
+                Campus Feed
+              </Button>
+            </Link>
+            <Link href="/clubs/register">
+              <Button size="lg">
+                <Plus className="mr-2 h-4 w-4" />
+                Register a Club
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Bar */}
