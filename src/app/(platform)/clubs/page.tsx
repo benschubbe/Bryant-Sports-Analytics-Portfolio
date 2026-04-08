@@ -67,6 +67,7 @@ function getDomainIcon(domain: string | null) {
 export default function ClubsDirectoryPage() {
   const [search, setSearch] = useState("");
   const [clubs, setClubs] = useState<Club[]>([]);
+  const [uniqueMembers, setUniqueMembers] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,7 +79,8 @@ export default function ClubsDirectoryPage() {
         const res = await fetch(`/api/clubs?${params}`, { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
-          setClubs(data);
+          setClubs(data.clubs || data);
+          if (data.uniqueMembers !== undefined) setUniqueMembers(data.uniqueMembers);
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
@@ -94,7 +96,7 @@ export default function ClubsDirectoryPage() {
     };
   }, [search]);
 
-  const totalMembers = clubs.reduce((sum, c) => sum + (c._count?.memberships || 0), 0);
+  const totalMembers = uniqueMembers;
 
   return (
     <div className="min-h-screen bg-bryant-gray-50">

@@ -134,18 +134,24 @@ export default function ClubSettingsPage() {
             />
 
             <div>
-              <Input
-                label="Accent Color (hex)"
-                value={color}
-                onChange={(e) => { setColor(e.target.value); setSuccess(""); }}
-                placeholder="#C5A44E"
-              />
-              <div className="mt-2 flex items-center gap-3">
-                <div
-                  className="h-8 w-8 rounded-lg border border-bryant-gray-200"
-                  style={{ backgroundColor: isValidHex(color) ? color : "#ccc" }}
+              <label className="mb-1.5 block text-sm font-medium text-bryant-gray-700">
+                Accent Color
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={isValidHex(color) ? color : "#C5A44E"}
+                  onChange={(e) => { setColor(e.target.value); setSuccess(""); }}
+                  className="h-10 w-14 cursor-pointer rounded-lg border border-bryant-gray-200 bg-white p-1"
                 />
-                <span className="text-xs text-bryant-gray-500">Color preview</span>
+                <input
+                  type="text"
+                  value={color}
+                  onChange={(e) => { setColor(e.target.value); setSuccess(""); }}
+                  className="h-10 w-28 rounded-lg border border-bryant-gray-200 px-3 text-sm text-bryant-gray-700 font-mono"
+                  placeholder="#C5A44E"
+                />
+                <span className="text-xs text-bryant-gray-400">Click to pick</span>
               </div>
             </div>
 

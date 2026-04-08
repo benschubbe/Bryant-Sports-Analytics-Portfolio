@@ -27,7 +27,15 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(clubs);
+    // Count unique users across all clubs (not sum of per-club counts)
+    const uniqueUserCount = await prisma.clubMembership.groupBy({
+      by: ["userId"],
+    });
+
+    return NextResponse.json({
+      clubs,
+      uniqueMembers: uniqueUserCount.length,
+    });
   } catch (error) {
     console.error("Clubs GET error:", error);
     return NextResponse.json(

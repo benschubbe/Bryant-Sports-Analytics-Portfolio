@@ -99,20 +99,26 @@ export default function ClubRegisterPage() {
                 rows={4}
               />
 
-              <Input
-                label="Accent Color (hex)"
-                placeholder="#C5A44E"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-              />
-
-              {/* Color preview */}
-              <div className="flex items-center gap-3">
-                <div
-                  className="h-8 w-8 rounded-lg border border-bryant-gray-200"
-                  style={{ backgroundColor: color }}
-                />
-                <span className="text-sm text-bryant-gray-500">Color preview</span>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-bryant-gray-700">
+                  Accent Color
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="h-10 w-14 cursor-pointer rounded-lg border border-bryant-gray-200 bg-white p-1"
+                  />
+                  <input
+                    type="text"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="h-10 w-28 rounded-lg border border-bryant-gray-200 px-3 text-sm text-bryant-gray-700 font-mono"
+                    placeholder="#C5A44E"
+                  />
+                  <span className="text-xs text-bryant-gray-400">Click to pick a color</span>
+                </div>
               </div>
 
               {error && (
