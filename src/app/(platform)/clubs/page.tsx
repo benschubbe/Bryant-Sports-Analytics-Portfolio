@@ -21,6 +21,7 @@ import {
   Heart,
   Briefcase,
   Rss,
+  User,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -104,6 +105,12 @@ export default function ClubsDirectoryPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <Link href="/my">
+              <Button variant="outline" size="lg">
+                <User className="mr-2 h-4 w-4" />
+                My Dashboard
+              </Button>
+            </Link>
             <Link href="/campus-feed">
               <Button variant="outline" size="lg">
                 <Rss className="mr-2 h-4 w-4" />
