@@ -55,9 +55,13 @@ export function Topbar({ pageTitle }: TopbarProps) {
         </button>
 
         {/* User avatar */}
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-bryant-gold/20 text-sm font-semibold text-bryant-gold">
-          {initials}
-        </div>
+        {session?.user?.image ? (
+          <img src={session.user.image} alt={session?.user?.name || "User"} className="h-9 w-9 rounded-full object-cover" />
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-bryant-gold/20 text-sm font-semibold text-bryant-gold">
+            {initials}
+          </div>
+        )}
       </div>
     </header>
   );

@@ -33,6 +33,8 @@ function LoginForm() {
       if (result?.error) {
         setError("Invalid email or password. Please try again.");
       } else if (result?.ok) {
+        // Auto-match to clubs based on concentration
+        fetch("/api/clubs/auto-match", { method: "POST" }).catch(() => {});
         const params = new URLSearchParams(window.location.search);
         const callbackUrl = params.get("callbackUrl") || "/clubs";
         window.location.href = callbackUrl;

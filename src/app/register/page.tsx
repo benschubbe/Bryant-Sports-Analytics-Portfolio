@@ -32,6 +32,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    imageUrl: "",
     password: "",
     confirmPassword: "",
     classYear: "",
@@ -98,6 +99,7 @@ export default function RegisterPage() {
           name: form.name.trim(),
           email: form.email.trim().toLowerCase(),
           password: form.password,
+          imageUrl: form.imageUrl || undefined,
           classYear: form.classYear,
           concentration: form.concentration,
         }),
@@ -205,6 +207,15 @@ export default function RegisterPage() {
                 onChange={(e) => updateField("email", e.target.value)}
                 error={fieldErrors.email}
                 required
+                className="border-bryant-gray-700 bg-bryant-gray-800 text-white placeholder:text-bryant-gray-500"
+              />
+
+              <Input
+                label="Profile Image URL (optional)"
+                type="url"
+                placeholder="https://example.com/photo.jpg"
+                value={form.imageUrl}
+                onChange={(e) => updateField("imageUrl", e.target.value)}
                 className="border-bryant-gray-700 bg-bryant-gray-800 text-white placeholder:text-bryant-gray-500"
               />
 

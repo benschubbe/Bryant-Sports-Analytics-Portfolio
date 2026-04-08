@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, password, classYear, concentration } = body;
+    const { name, email, password, classYear, concentration, imageUrl } = body;
 
     // Validate required fields
     if (!name || !name.trim()) {
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
         name: name.trim(),
         email: normalizedEmail,
         passwordHash,
+        image: imageUrl || null,
         classYear: classYear || null,
         concentration: concentration || null,
         role: "STUDENT",

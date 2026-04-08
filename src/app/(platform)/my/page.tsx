@@ -91,6 +91,36 @@ export default function MyDashboardPage() {
   const userName = session?.user?.name || "User";
   const initials = getInitials(userName);
 
+  const [autoMatchLoading, setAutoMatchLoading] = useState(false);
+  const [autoMatchResult, setAutoMatchResult] = useState<string | null>(null);
+
+  async function handleAutoMatch() {
+    setAutoMatchLoading(true);
+    setAutoMatchResult(null);
+    try {
+      const res = await fetch("/api/clubs/auto-match", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.matched && data.matched.length > 0) {
+          setAutoMatchResult(`Joined: ${data.matched.map((c: { clubName: string }) => c.clubName).join(", ")}`);
+          // Refresh clubs list
+          const clubsRes = await fetch("/api/my/clubs");
+          if (clubsRes.ok) setClubs(await clubsRes.json());
+        } else if (data.alreadyMember && data.alreadyMember.length > 0) {
+          setAutoMatchResult("You're already a member of all matching clubs.");
+        } else {
+          setAutoMatchResult(data.message || "No matching clubs found.");
+        }
+      } else {
+        setAutoMatchResult("Failed to auto-match. Please try again.");
+      }
+    } catch {
+      setAutoMatchResult("Failed to auto-match. Please try again.");
+    } finally {
+      setAutoMatchLoading(false);
+    }
+  }
+
   const totalProjects = projects.length;
   const totalPosts = posts.length;
   const totalClubs = clubs.length;
@@ -112,9 +142,13 @@ export default function MyDashboardPage() {
       <div className="mx-auto max-w-5xl px-6 py-12">
         {/* Profile header */}
         <div className="mb-8 flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-bryant-gold/20 text-lg font-bold text-bryant-gold">
-            {initials}
-          </div>
+          {session?.user?.image ? (
+            <img src={session.user.image} alt={userName} className="h-14 w-14 rounded-full object-cover" />
+          ) : (
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-bryant-gold/20 text-lg font-bold text-bryant-gold">
+              {initials}
+            </div>
+          )}
           <div>
             <h1 className="text-2xl font-bold text-bryant-black">{userName}</h1>
             <p className="text-sm text-bryant-gray-500">
@@ -150,10 +184,25 @@ export default function MyDashboardPage() {
           <section>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-bryant-black">My Clubs</h2>
-              <Link href="/clubs">
-                <Button variant="outline" size="sm">Browse Clubs</Button>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAutoMatch}
+                  disabled={autoMatchLoading}
+                >
+                  {autoMatchLoading ? "Matching..." : "Find Clubs for Me"}
+                </Button>
+                <Link href="/clubs">
+                  <Button variant="outline" size="sm">Browse Clubs</Button>
+                </Link>
+              </div>
             </div>
+            {autoMatchResult && (
+              <div className="mb-3 rounded-lg border border-bryant-gold/30 bg-bryant-gold/10 px-4 py-3 text-sm text-bryant-black">
+                {autoMatchResult}
+              </div>
+            )}
             {clubs.length > 0 ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {clubs.map((m) => (
