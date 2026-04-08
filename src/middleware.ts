@@ -5,16 +5,20 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("authjs.session-token")?.value
     || request.cookies.get("__Secure-authjs.session-token")?.value;
 
-  const isAuthPage = request.nextUrl.pathname.startsWith("/login")
-    || request.nextUrl.pathname.startsWith("/register");
-  const isApiRoute = request.nextUrl.pathname.startsWith("/api");
-  const isPublicPage = request.nextUrl.pathname === "/";
+  const pathname = request.nextUrl.pathname;
+
+  const isAuthPage = pathname.startsWith("/login")
+    || pathname.startsWith("/register");
+  const isApiRoute = pathname.startsWith("/api");
+  const isPublicPage = pathname === "/"
+    || pathname.startsWith("/clubs")
+    || pathname.startsWith("/campus-feed");
 
   // Allow public pages, auth pages, and API routes
   if (isPublicPage || isAuthPage || isApiRoute) {
-    // If logged in and on auth page, redirect to dashboard
+    // If logged in and on auth page, redirect to clubs
     if (isAuthPage && token) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return NextResponse.redirect(new URL("/clubs", request.url));
     }
     return NextResponse.next();
   }
@@ -22,7 +26,7 @@ export function middleware(request: NextRequest) {
   // Protected pages — redirect to login if no session
   if (!token) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
+    loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
