@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useCallback } from "react";
 
 export interface ModalProps {
@@ -38,7 +40,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       />
 
       {/* Panel */}
-      <div className="relative z-10 w-full max-w-lg rounded-xl bg-white shadow-xl mx-4 animate-in fade-in zoom-in-95 duration-200">
+      <div role="dialog" aria-modal="true" className="relative z-10 w-full max-w-lg rounded-xl bg-white shadow-xl mx-4 animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-bryant-gray-200">
           <h2 className="text-lg font-semibold text-bryant-gray-900">

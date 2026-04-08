@@ -1,12 +1,19 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Users, Layers, MessageSquare, Calendar, Plus, FileText, CalendarDays, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DemoBox } from "@/components/club/demo-box";
+
+interface ClubStats {
+  memberCount: number;
+  projectCount: number;
+  postCount: number;
+  eventCount: number;
+}
 
 export default function ClubDashboardPage() {
   const params = useParams();
@@ -15,6 +22,26 @@ export default function ClubDashboardPage() {
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
+
+  const [stats, setStats] = useState<ClubStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch(`/api/clubs/${slug}/stats`);
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch {
+        // stats will remain null, showing em-dashes
+      } finally {
+        setLoadingStats(false);
+      }
+    }
+    fetchStats();
+  }, [slug]);
 
   return (
     <div className="space-y-6">
@@ -35,7 +62,9 @@ export default function ClubDashboardPage() {
             <div className="flex items-center justify-center mb-2">
               <Users className="h-5 w-5 text-bryant-gray-400" />
             </div>
-            <p className="text-2xl font-bold text-bryant-gray-900">&mdash;</p>
+            <p className="text-2xl font-bold text-bryant-gray-900">
+              {loadingStats ? "..." : stats ? stats.memberCount : "\u2014"}
+            </p>
             <p className="text-sm text-bryant-gray-500">Members</p>
           </CardContent>
         </Card>
@@ -44,7 +73,9 @@ export default function ClubDashboardPage() {
             <div className="flex items-center justify-center mb-2">
               <Layers className="h-5 w-5 text-bryant-gray-400" />
             </div>
-            <p className="text-2xl font-bold text-bryant-gray-900">&mdash;</p>
+            <p className="text-2xl font-bold text-bryant-gray-900">
+              {loadingStats ? "..." : stats ? stats.projectCount : "\u2014"}
+            </p>
             <p className="text-sm text-bryant-gray-500">Projects</p>
           </CardContent>
         </Card>
@@ -53,7 +84,9 @@ export default function ClubDashboardPage() {
             <div className="flex items-center justify-center mb-2">
               <MessageSquare className="h-5 w-5 text-bryant-gray-400" />
             </div>
-            <p className="text-2xl font-bold text-bryant-gray-900">&mdash;</p>
+            <p className="text-2xl font-bold text-bryant-gray-900">
+              {loadingStats ? "..." : stats ? stats.postCount : "\u2014"}
+            </p>
             <p className="text-sm text-bryant-gray-500">Posts</p>
           </CardContent>
         </Card>
@@ -62,7 +95,9 @@ export default function ClubDashboardPage() {
             <div className="flex items-center justify-center mb-2">
               <Calendar className="h-5 w-5 text-bryant-gray-400" />
             </div>
-            <p className="text-2xl font-bold text-bryant-gray-900">&mdash;</p>
+            <p className="text-2xl font-bold text-bryant-gray-900">
+              {loadingStats ? "..." : stats ? stats.eventCount : "\u2014"}
+            </p>
             <p className="text-sm text-bryant-gray-500">Events</p>
           </CardContent>
         </Card>

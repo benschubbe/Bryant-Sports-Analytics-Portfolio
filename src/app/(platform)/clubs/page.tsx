@@ -65,23 +65,28 @@ export default function ClubsDirectoryPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function fetchClubs() {
       try {
         const params = new URLSearchParams();
         if (search) params.set("search", search);
-        const res = await fetch(`/api/clubs?${params}`);
+        const res = await fetch(`/api/clubs?${params}`, { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
           setClubs(data);
         }
-      } catch {
-        // silently fail
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        // silently fail for other errors
       } finally {
         setLoading(false);
       }
     }
     const timeout = setTimeout(fetchClubs, search ? 300 : 0);
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [search]);
 
   const totalMembers = clubs.reduce((sum, c) => sum + (c._count?.memberships || 0), 0);

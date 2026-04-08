@@ -33,6 +33,7 @@ export default function ClubChannelsPage() {
   const [showForm, setShowForm] = useState(false);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({ name: "", description: "", type: "GENERAL" });
 
   function resetForm() {
@@ -42,6 +43,7 @@ export default function ClubChannelsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name) return;
+    setError("");
     setLoading(true);
     try {
       const res = await fetch(`/api/clubs/${slug}/channels`, {
@@ -65,14 +67,7 @@ export default function ClubChannelsPage() {
         setShowForm(false);
       }
     } catch {
-      // Endpoint may not exist — store locally
-      const localChannel: Channel = {
-        id: crypto.randomUUID(),
-        ...form,
-      };
-      setChannels((prev) => [localChannel, ...prev]);
-      resetForm();
-      setShowForm(false);
+      setError("Failed to save. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -93,6 +88,13 @@ export default function ClubChannelsPage() {
           Create Channel
         </Button>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Modal Form */}
       <Modal open={showForm} onClose={() => { setShowForm(false); resetForm(); }} title="Create Channel">

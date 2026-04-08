@@ -28,6 +28,7 @@ export default function ClubChallengesPage() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -47,7 +48,7 @@ export default function ClubChallengesPage() {
         setChallenges((prev) => [challenge, ...prev]);
       }
     } catch {
-      // silently fail
+      setError("Failed to generate challenge. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -64,6 +65,11 @@ export default function ClubChallengesPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title || !form.startDate || !form.endDate) return;
+    if (new Date(form.endDate) <= new Date(form.startDate)) {
+      setError("End date must be after start date.");
+      return;
+    }
+    setError("");
     setLoading(true);
     try {
       const res = await fetch(`/api/clubs/${slug}/challenges`, {
@@ -84,10 +90,7 @@ export default function ClubChallengesPage() {
         setShowForm(false);
       }
     } catch {
-      const localChallenge: Challenge = { id: crypto.randomUUID(), ...form };
-      setChallenges((prev) => [localChallenge, ...prev]);
-      resetForm();
-      setShowForm(false);
+      setError("Failed to save. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -114,6 +117,13 @@ export default function ClubChallengesPage() {
           </Button>
         </div>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Modal Form */}
       <Modal open={showForm} onClose={() => { setShowForm(false); resetForm(); }} title="Create Challenge">

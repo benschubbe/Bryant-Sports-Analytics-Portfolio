@@ -30,6 +30,7 @@ export default function ClubProjectsPage() {
   const [showForm, setShowForm] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     title: "",
     abstract: "",
@@ -46,6 +47,7 @@ export default function ClubProjectsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title) return;
+    setError("");
     setLoading(true);
     try {
       const payload = {
@@ -64,7 +66,7 @@ export default function ClubProjectsPage() {
         setShowForm(false);
       }
     } catch {
-      // fail gracefully
+      setError("Failed to save. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -95,6 +97,13 @@ export default function ClubProjectsPage() {
           New Project
         </Button>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Modal Form */}
       <Modal open={showForm} onClose={() => { setShowForm(false); resetForm(); }} title="New Project">

@@ -8,18 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { slugify } from "@/lib/utils";
+import { DOMAIN_OPTIONS as BASE_DOMAIN_OPTIONS } from "@/lib/constants";
 
 const DOMAIN_OPTIONS = [
   { value: "", label: "Select a domain..." },
-  { value: "Sports Analytics", label: "Sports Analytics" },
-  { value: "Finance", label: "Finance" },
-  { value: "Computer Science", label: "Computer Science" },
-  { value: "Marketing", label: "Marketing" },
-  { value: "Engineering", label: "Engineering" },
-  { value: "Debate", label: "Debate" },
-  { value: "Arts", label: "Arts" },
-  { value: "Community Service", label: "Community Service" },
-  { value: "Other", label: "Other" },
+  ...BASE_DOMAIN_OPTIONS,
 ];
 
 export default function ClubRegisterPage() {

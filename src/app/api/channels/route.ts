@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check for duplicate name
-    const existing = await prisma.channel.findUnique({ where: { name } });
+    // Check for duplicate name (channel names are unique per club)
+    const existing = await prisma.channel.findFirst({ where: { name } });
     if (existing) {
       return NextResponse.json(
         { error: "A channel with this name already exists" },

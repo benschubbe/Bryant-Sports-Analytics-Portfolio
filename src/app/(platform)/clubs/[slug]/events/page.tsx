@@ -37,6 +37,7 @@ export default function ClubEventsPage() {
   const [showForm, setShowForm] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -53,6 +54,11 @@ export default function ClubEventsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title || !form.type || !form.startTime || !form.endTime) return;
+    if (new Date(form.endTime) <= new Date(form.startTime)) {
+      setError("End time must be after start time.");
+      return;
+    }
+    setError("");
     setLoading(true);
     try {
       const res = await fetch(`/api/clubs/${slug}/events`, {
@@ -67,7 +73,7 @@ export default function ClubEventsPage() {
         setShowForm(false);
       }
     } catch {
-      // fail gracefully
+      setError("Failed to save. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -88,6 +94,13 @@ export default function ClubEventsPage() {
           Create Event
         </Button>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Modal Form */}
       <Modal open={showForm} onClose={() => { setShowForm(false); resetForm(); }} title="Create Event">

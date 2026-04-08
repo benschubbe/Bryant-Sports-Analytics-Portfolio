@@ -22,9 +22,11 @@ export default function ClubFeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCompose, setShowCompose] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit() {
     if (!composeText.trim()) return;
+    setError("");
     setLoading(true);
     try {
       const res = await fetch(`/api/clubs/${slug}/posts`, {
@@ -39,7 +41,7 @@ export default function ClubFeedPage() {
         setShowCompose(false);
       }
     } catch {
-      // fail gracefully
+      setError("Failed to save. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -60,6 +62,13 @@ export default function ClubFeedPage() {
           New Post
         </Button>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Compose Box */}
       {showCompose && (

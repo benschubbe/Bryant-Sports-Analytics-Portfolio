@@ -47,6 +47,7 @@ export default function ClubJobsPage() {
   const [showForm, setShowForm] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     title: "",
     company: "",
@@ -65,6 +66,7 @@ export default function ClubJobsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title || !form.company || !form.description) return;
+    setError("");
     setLoading(true);
     try {
       const res = await fetch(`/api/clubs/${slug}/jobs`, {
@@ -79,7 +81,7 @@ export default function ClubJobsPage() {
         setShowForm(false);
       }
     } catch {
-      // fail gracefully
+      setError("Failed to save. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -100,6 +102,13 @@ export default function ClubJobsPage() {
           Post Job
         </Button>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Modal Form */}
       <Modal open={showForm} onClose={() => { setShowForm(false); resetForm(); }} title="Post a Job">
