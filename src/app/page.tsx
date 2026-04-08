@@ -73,16 +73,15 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative min-h-screen overflow-hidden pt-16">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 animate-gradient bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] bg-[length:400%_400%]" />
-        {/* Overlay pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
-
-        {/* Floating decorative blobs */}
-        <div className="absolute left-[10%] top-[20%] h-72 w-72 animate-blob rounded-full bg-bryant-gold/20 blur-3xl" />
-        <div className="absolute right-[15%] top-[30%] h-96 w-96 animate-blob animation-delay-2000 rounded-full bg-[#6b2737]/20 blur-3xl" />
-        <div className="absolute bottom-[20%] left-[30%] h-80 w-80 animate-blob animation-delay-4000 rounded-full bg-[#1b4332]/20 blur-3xl" />
-        <div className="absolute bottom-[30%] right-[10%] h-64 w-64 animate-blob animation-delay-6000 rounded-full bg-[#b5985a]/15 blur-3xl" />
+        {/* Background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/hero-bg.jpg')" }}
+        />
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-black/60" />
+        {/* Gold gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/70" />
 
         {/* Content */}
         <div className="relative z-10">
