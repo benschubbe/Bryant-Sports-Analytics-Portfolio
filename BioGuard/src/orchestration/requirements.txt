@@ -1,8 +1,0 @@
-langchain
-langgraph
-pydantic
-flask
-flask-cors
-requests
-numpy
-pyyaml
