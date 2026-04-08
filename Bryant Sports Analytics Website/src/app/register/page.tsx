@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -27,6 +28,7 @@ const concentrationOptions = [
 ];
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -42,7 +44,6 @@ export default function RegisterPage() {
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
-    // Clear field error on change
     if (fieldErrors[field]) {
       setFieldErrors((prev) => {
         const next = { ...prev };
@@ -53,22 +54,14 @@ export default function RegisterPage() {
     if (error) setError("");
   }
 
-  function validateEmail(email: string): string | null {
-    if (!email.trim()) return "Email is required.";
-    const domain = email.split("@")[1]?.toLowerCase();
-    if (!domain || !domain.endsWith(".edu")) {
-      return "Please use a valid university .edu email address.";
-    }
-    return null;
-  }
-
   function validate(): boolean {
     const errors: Record<string, string> = {};
 
     if (!form.name.trim()) errors.name = "Full name is required.";
 
-    const emailErr = validateEmail(form.email);
-    if (emailErr) errors.email = emailErr;
+    if (!form.email.trim()) {
+      errors.email = "Email is required.";
+    }
 
     if (!form.password) {
       errors.password = "Password is required.";
@@ -113,10 +106,8 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        // Show specific error from the API
         setError(data.error || "Registration failed. Please try again.");
 
-        // Highlight the email field if it's a duplicate
         if (res.status === 409) {
           setFieldErrors((prev) => ({
             ...prev,
@@ -125,10 +116,14 @@ export default function RegisterPage() {
         }
       } else {
         setSuccess(true);
+        // Redirect to login after a brief delay
+        setTimeout(() => {
+          router.push("/login?registered=true");
+        }, 2000);
       }
     } catch {
       setError(
-        "Unable to connect to the server. Please check your connection and try again."
+        "Unable to connect to the server. Please check your connection and try again.",
       );
     } finally {
       setLoading(false);
@@ -150,12 +145,11 @@ export default function RegisterPage() {
             Account Created!
           </h1>
           <p className="text-white/60 mb-8">
-            Welcome to Bryant Sports Analytics Hub. You can now sign in with
-            your credentials.
+            Welcome to Bryant Sports Analytics Hub. Redirecting you to sign in...
           </p>
-          <Link href="/login">
+          <Link href="/login?registered=true">
             <Button size="lg" className="w-full max-w-xs">
-              Sign In to Your Account
+              Sign In Now
             </Button>
           </Link>
         </div>
@@ -179,14 +173,14 @@ export default function RegisterPage() {
             <span className="text-bryant-gold">Analytics Hub</span>
           </h1>
           <p className="mt-2 text-sm text-white/50">
-            Create your account with a valid .edu email
+            Create your account
           </p>
         </div>
 
         <Card className="border-bryant-gray-800 bg-bryant-gray-900">
           <CardContent className="py-8">
             {error && (
-              <div className="mb-6 flex items-start gap-3 rounded-lg border border-error/20 bg-error/10 px-4 py-3 text-sm text-error">
+              <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -204,23 +198,16 @@ export default function RegisterPage() {
                 className="border-bryant-gray-700 bg-bryant-gray-800 text-white placeholder:text-bryant-gray-500"
               />
 
-              <div>
-                <Input
-                  label="University Email"
-                  type="email"
-                  placeholder="you@bryant.edu"
-                  value={form.email}
-                  onChange={(e) => updateField("email", e.target.value)}
-                  error={fieldErrors.email}
-                  required
-                  className="border-bryant-gray-700 bg-bryant-gray-800 text-white placeholder:text-bryant-gray-500"
-                />
-                {!fieldErrors.email && (
-                  <p className="mt-1 text-xs text-bryant-gray-500">
-                    Must be a valid .edu email address
-                  </p>
-                )}
-              </div>
+              <Input
+                label="Email"
+                type="email"
+                placeholder="you@bryant.edu"
+                value={form.email}
+                onChange={(e) => updateField("email", e.target.value)}
+                error={fieldErrors.email}
+                required
+                className="border-bryant-gray-700 bg-bryant-gray-800 text-white placeholder:text-bryant-gray-500"
+              />
 
               <Input
                 label="Password"
