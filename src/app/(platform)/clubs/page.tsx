@@ -115,19 +115,19 @@ export default function ClubsDirectoryPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link href="/my">
-              <Button variant="outline" size="lg">
+              <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10">
                 <User className="mr-2 h-4 w-4" />
                 My Dashboard
               </Button>
             </Link>
             <Link href="/showcase">
-              <Button variant="outline" size="lg">
+              <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10">
                 <Trophy className="mr-2 h-4 w-4" />
                 Student Showcase
               </Button>
             </Link>
             <Link href="/campus-feed">
-              <Button variant="outline" size="lg">
+              <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10">
                 <Rss className="mr-2 h-4 w-4" />
                 Campus Feed
               </Button>

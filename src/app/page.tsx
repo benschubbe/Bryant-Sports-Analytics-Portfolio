@@ -95,6 +95,12 @@ export default function LandingPage() {
             >
               For Employers
             </Link>
+            <Link
+              href="/pricing"
+              className="text-sm font-medium text-white transition-colors hover:text-bryant-gold"
+            >
+              For Schools
+            </Link>
             <Link href="/login">
               <Button
                 variant="outline"

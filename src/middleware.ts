@@ -15,7 +15,8 @@ export function middleware(request: NextRequest) {
     || pathname.startsWith("/campus-feed")
     || pathname.startsWith("/showcase")
     || pathname.startsWith("/profiles")
-    || pathname.startsWith("/employers");
+    || pathname.startsWith("/employers")
+    || pathname.startsWith("/pricing");
 
   // Allow public pages, auth pages, and API routes
   if (isPublicPage || isAuthPage || isApiRoute) {
